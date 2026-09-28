@@ -4,6 +4,7 @@
   "description": "מערכת ניקוד כיתתית למורה ולכיתה אחת",
   "start_url": "./index.html",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#e3f2fd",
   "theme_color": "#1976D2",
   "orientation": "any",

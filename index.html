@@ -105,9 +105,15 @@
         #class-table-wrapper { overflow-x: auto; width: 100%; border: 2px solid rgba(25,118,210,0.25); border-radius: 14px; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 800px; }
         th, td { border: 1.5px solid #c5d8f0; padding: 2px; text-align: center; vertical-align: top; }
-        th { background-color: rgba(25, 118, 210, 0.12); font-weight: 700; padding: 10px 5px; }
-        td:first-child { font-weight: 600; background-color: rgba(25,118,210,0.04); padding-top: 25px; font-size: 0.9em; }
-        .cell-content { padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 88px; border-radius: 6px; }
+        th { background-color: #ffe082; font-weight: 700; padding: 10px 5px; color: #333; }
+        td.time-col { font-weight: 800; background-color: #fff8e1; padding: 8px 4px; font-size: 0.92em; width: 72px; vertical-align: middle; }
+        .cell-content { padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 72px; border-radius: 6px; }
+        .cell-subject { font-size: 0.82em; font-weight: 800; line-height: 1.2; min-height: 1.2em; }
+        .break-cell { background: #b2dfdb; font-weight: 800; color: #00695c; vertical-align: middle !important; padding: 8px; }
+        .off-cell { background: #fafafa; color: #9e9e9e; vertical-align: middle !important; }
+        .kodesh-cell { background: rgba(149, 117, 205, 0.18); }
+        .chol-cell { background: rgba(100, 181, 246, 0.22); }
+        .tefila-cell { background: rgba(128, 222, 234, 0.35); }
         .highlight-today { background-color: var(--current-day-bg) !important; border-left: var(--current-day-border); border-right: var(--current-day-border); }
         th.highlight-today { border-top: var(--current-day-border); }
         .lesson-name-input { width: 95%; border: none; border-bottom: 1px solid #b0b0b0; padding: 4px; font-size: 0.9em; text-align: center; background: transparent; font-weight: 600; font-family: var(--font-family); }
@@ -197,22 +203,43 @@
         #update-notification.show { display: flex; }
         #reload-btn { background: var(--secondary-color); color: #333; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
         .teacher-badge { font-size: 0.85em; color: var(--dark-gray); font-weight: 600; }
+        #admin-login-key-btn {
+            position: fixed; bottom: max(20px, env(safe-area-inset-bottom, 20px)); left: max(20px, env(safe-area-inset-left, 20px));
+            background: var(--dark-gray); color: white; border: none; border-radius: 50%; width: 55px; height: 55px;
+            font-size: 26px; cursor: pointer; z-index: 1001;
+        }
+        .titlebar-drag {
+            position: fixed; z-index: 4000;
+            left: env(titlebar-area-x, 0px); top: env(titlebar-area-y, 0px);
+            width: env(titlebar-area-width, 0px); height: env(titlebar-area-height, 0px);
+            -webkit-app-region: drag; app-region: drag;
+        }
+        button, input, select, textarea, a { -webkit-app-region: no-drag; app-region: no-drag; }
 
-        /* ===== חלונית שיעור — בלי מסגרת ===== */
+        /* ===== צמצום חלון (כפתור הריבוע) — בלי מסגרת, רק שיעורי היום ===== */
         body.compact-ui {
             padding: 0 !important;
-            background: #f7fafc !important;
+            margin: 0 !important;
+            background: #ffffff !important;
             min-height: 100vh;
+            overflow: hidden;
         }
+        body.compact-ui #login-page,
+        body.compact-ui #setup-page,
+        body.compact-ui #manage-panel,
+        body.compact-ui #admin-panel { display: none !important; }
         body.compact-ui .main-container {
             margin: 0 !important;
-            padding: 8px 8px 12px !important;
+            padding: 6px 6px 8px !important;
             border-radius: 0 !important;
             box-shadow: none !important;
+            border: none !important;
             backdrop-filter: none !important;
-            background: transparent !important;
+            background: #ffffff !important;
             max-width: none !important;
             width: 100% !important;
+            height: 100vh;
+            overflow-y: auto;
         }
         body.compact-ui header,
         body.compact-ui .class-actions,
@@ -220,26 +247,22 @@
         body.compact-ui .header-actions-row,
         body.compact-ui .week-navigation,
         body.compact-ui #install-app-btn,
-        body.compact-ui #manage-panel { display: none !important; }
+        body.compact-ui .mobile-day-header,
+        body.compact-ui #admin-login-key-btn { display: none !important; }
         body.compact-ui #mobile-day-view { display: block !important; }
         body.compact-ui .class-scoring-header {
             display: flex !important;
             grid-template-columns: none;
-            justify-content: space-between;
-            margin-bottom: 8px;
+            justify-content: center;
+            margin-bottom: 6px;
         }
-        body.compact-ui .header-top-row { display: flex; width: 100%; justify-content: space-between; align-items: center; }
-        body.compact-ui .total-points-container { min-width: unset; padding: 4px 12px; }
-        body.compact-ui #total-points-display { font-size: 1.5em; }
-        body.compact-ui #compact-bar { display: flex !important; }
-        #compact-bar {
-            display: none;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-        #compact-bar button { padding: 8px 10px; font-size: 0.85em; min-height: 40px; }
+        body.compact-ui .header-top-row { display: flex; width: 100%; justify-content: center; }
+        body.compact-ui .total-points-container { min-width: unset; padding: 3px 10px; }
+        body.compact-ui #total-points-display { font-size: 1.35em; }
+        body.compact-ui .mobile-lesson-card { border-radius: 10px; margin-bottom: 6px; }
+        body.compact-ui .mobile-lesson-row { padding: 8px 8px; gap: 6px; }
+        body.compact-ui .mobile-lesson-label { min-width: 44px; font-size: 0.75em; }
+        #compact-bar { display: none !important; }
 
         @media (max-width: 768px) {
             body { padding: 6px; }
@@ -262,13 +285,15 @@
             .header-top-row .total-points-container { grid-column: 1; }
             .header-top-row .week-navigation { grid-column: 2; }
         }
-        @media (display-mode: standalone) {
-            body { padding: 0; }
+        @media (display-mode: standalone), (display-mode: window-controls-overlay) {
+            body { padding: 0; padding-top: env(titlebar-area-height, 0px); }
             .main-container { margin: 12px auto; }
         }
+        body.compact-ui { padding-top: env(titlebar-area-height, 0px) !important; }
     </style>
 </head>
 <body>
+    <div class="titlebar-drag" aria-hidden="true"></div>
     <div id="update-notification"><span>יש גרסה חדשה לאפליקציה!</span><button id="reload-btn">עדכן עכשיו</button></div>
 
     <div id="login-page" class="main-container">
@@ -277,8 +302,8 @@
         <div class="login-card">
             <form id="login-form" autocomplete="off">
                 <div class="form-group" style="text-align:right;">
-                    <label style="color:#fff;">שם המורה</label>
-                    <input type="text" id="login-name" placeholder="לדוגמה: המורה רבקה" required>
+                    <label style="color:#fff;">שם משתמש</label>
+                    <input type="text" id="login-name" placeholder="שם משתמש" required autocomplete="username">
                 </div>
                 <div class="form-group" style="text-align:right;">
                     <label style="color:#fff;">סיסמה</label>
@@ -289,6 +314,7 @@
         </div>
         <p id="setup-hint" class="hidden" style="margin-top:18px;color:#555;">עדיין אין כיתה במערכת. <a href="#" id="open-setup-link">הקמת כיתה חדשה</a></p>
         <button id="install-app-btn"><span>📲</span><span id="install-btn-text">התקן את האפליקציה</span></button>
+        <button id="admin-login-key-btn" title="ניהול מורים">🔑</button>
     </div>
 
     <div id="setup-page" class="main-container hidden">
@@ -297,6 +323,7 @@
         <form id="setup-form">
             <div class="form-group"><label>שם הכיתה</label><input type="text" id="setup-class-name" placeholder="לדוגמה: כיתה ד2" required></div>
             <div class="form-group"><label>שם המחנך/ת</label><input type="text" id="setup-teacher-name" required></div>
+            <div class="form-group"><label>שם משתמש למחנך/ת</label><input type="text" id="setup-teacher-user" required></div>
             <div class="form-group"><label>סיסמת המחנך/ת</label><input type="password" id="setup-teacher-pass" required></div>
             <div class="form-group"><label>רשימת תלמידים (אופציונלי, כל שם בשורה)</label><textarea id="setup-students" rows="8" placeholder="ישראל ישראלי&#10;רותי כהן"></textarea></div>
             <button type="submit" class="modal-btn">צור כיתה והתחל</button>
@@ -304,18 +331,50 @@
         <p style="margin-top:14px;"><a href="#" id="back-to-login-link">חזרה לכניסה</a></p>
     </div>
 
-    <div id="main-app" class="main-container hidden">
-        <div id="compact-bar">
-            <strong id="compact-day-label"></strong>
-            <button type="button" id="exit-compact-btn" class="utility-btn">מסך מלא</button>
+    <div id="admin-panel" class="main-container hidden">
+        <header>
+            <h1>ניהול מורים</h1>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" id="admin-enter-class-btn" class="utility-btn success">כניסה לכיתה</button>
+                <button type="button" id="admin-logout-btn" class="utility-btn admin-action">יציאה</button>
+            </div>
+        </header>
+        <div class="manage-section">
+            <h2>מורים בכיתה</h2>
+            <p style="color:#666;font-size:0.92em;">מורה מקצועי נכנס עם שם משתמש וסיסמה, ונותן נקודות כיתתיות, מצטיינים והערות להורים.</p>
+            <form id="admin-add-teacher-form">
+                <div class="form-group"><label>שם מלא (יופיע בדיווחים)</label><input type="text" id="admin-teacher-name" required></div>
+                <div class="form-group"><label>שם משתמש</label><input type="text" id="admin-teacher-user" required></div>
+                <div class="form-group"><label>סיסמה</label><input type="password" id="admin-teacher-pass" required></div>
+                <div class="form-group"><label>תפקיד</label>
+                    <select id="admin-teacher-role">
+                        <option value="teacher">מורה מקצועי</option>
+                        <option value="homeroom">מחנך/ת</option>
+                    </select>
+                </div>
+                <button type="submit" class="utility-btn admin-action">הוסף מורה</button>
+            </form>
+            <ul id="admin-teachers-list" class="admin-list"></ul>
         </div>
+        <div class="manage-section">
+            <h2>חשבון מנהל</h2>
+            <form id="admin-settings-form">
+                <div class="form-group"><label>שם משתמש</label><input type="text" id="admin-settings-user" required></div>
+                <div class="form-group"><label>סיסמה חדשה</label><input type="password" id="admin-settings-pass" placeholder="השאירו ריק כדי לא לשנות"></div>
+                <button type="submit" class="utility-btn admin-action">שמור</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="main-app" class="main-container hidden">
+        <div id="compact-bar"><strong id="compact-day-label"></strong></div>
         <header>
             <div>
                 <h1 id="main-title">הכיתה</h1>
                 <div class="teacher-badge" id="logged-teacher-label"></div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-                <button type="button" id="compact-mode-btn" class="utility-btn gold" title="חלונית שיעור בלי מסגרת">חלונית שיעור</button>
+                <button type="button" id="open-admin-from-app-btn" class="utility-btn admin-action admin-only hidden">ניהול מורים</button>
                 <button type="button" id="open-manage-btn" class="utility-btn admin-action homeroom-only">ניהול כיתה</button>
                 <button type="button" id="logout-btn" class="utility-btn">יציאה</button>
             </div>
@@ -378,16 +437,6 @@
             <div id="student-grid"></div>
         </div>
         <div class="manage-section">
-            <h2>מורים נוספים לכיתה</h2>
-            <p style="color:#666;font-size:0.92em;">מורה מקצועי יכול להיכנס ולתת נקודות כיתתיות, לרשום מצטיינים ולשלוח הערה להורים.</p>
-            <form id="add-teacher-form">
-                <div class="form-group"><label>שם המורה</label><input type="text" id="new-teacher-name" required></div>
-                <div class="form-group"><label>סיסמה</label><input type="password" id="new-teacher-pass" required></div>
-                <button type="submit" class="utility-btn">הוסף מורה</button>
-            </form>
-            <ul id="teachers-list" class="admin-list"></ul>
-        </div>
-        <div class="manage-section">
             <h2>רשימת הערות להורים</h2>
             <p style="color:#666;font-size:0.92em;">הערות חופשיות בלבד — בלי נקודות אישיות. הרשימה שייכת לכיתה הזו.</p>
             <form id="add-note-form">
@@ -413,7 +462,7 @@
 
     <script>
     const SESSION_KEY = 'hakoachClassSession';
-    const isCompactQuery = new URLSearchParams(location.search).get('mode') === 'compact';
+    const ADMIN_DEFAULT = { user: 'yosefyotam', pass: '1029' };
 
     let newWorker;
     document.addEventListener('keydown', (e) => {
@@ -479,15 +528,36 @@
 
         let appData = {};
         let currentUser = null;
-        let compactMode = isCompactQuery;
+        let compactMode = false;
         let mobileDayIndex = -1;
         let outstandingContext = { week: null, cellId: null };
         let wheelNames = [];
         let wheelSpinning = false;
 
-        const days = ['שיעור', 'ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
+        const days = ['שעה', 'ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
         const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
-        const defaultSchedule = { 1: { lessons: 8 }, 2: { lessons: 8 }, 3: { lessons: 6 }, 4: { lessons: 8 }, 5: { lessons: 8 }, 6: { lessons: 4 } };
+        const KODESH = new Set(['גמרא','תורה','משנה','נביא','הלכה','פר"ש','תנ"ך','בר מצווה','חוגים','העשרה']);
+        const TEFILA = new Set(['שחרית וארוחת בוקר','מנחה וארוחת צהריים']);
+        const PERIODS = [
+            { id: 'shaharit', time: '7:20', type: 'score', days: ['שחרית וארוחת בוקר','שחרית וארוחת בוקר','שחרית וארוחת בוקר','שחרית וארוחת בוקר','שחרית וארוחת בוקר','שחרית וארוחת בוקר'] },
+            { id: 'p835', time: '8:35', type: 'score', days: ['גמרא','גמרא','תורה','גמרא','גמרא','תורה'] },
+            { id: 'p920', time: '9:20', type: 'score', days: ['גמרא','גמרא','משנה','גמרא','גמרא','עברית'] },
+            { id: 'brk1', time: '10:05', type: 'break', days: ['הפסקה','הפסקה','הפסקה','הפסקה','הפסקה','הפסקה'] },
+            { id: 'p1020', time: '10:20', type: 'score', days: ['היסטוריה','ספרות','מדעים','הלכה','מדעים','פר"ש'] },
+            { id: 'p1105', time: '11:05', type: 'score', days: ['משנה','נביא','מתמטיקה','עברית','מדעים','הלכה'] },
+            { id: 'brk2', time: '11:50', type: 'break', days: ['הפסקה','הפסקה','הפסקה','הפסקה','הפסקה', null] },
+            { id: 'p1205', time: '12:05', type: 'score', days: ['אנגלית','מתמטיקה','אנגלית','עברית','אנגלית', null] },
+            { id: 'p1250', time: '12:50', type: 'score', days: ['מדעים','מתמטיקה','מתמטיקה','מתמטיקה','אנגלית', null] },
+            { id: 'p1335', time: '13:35', type: 'score', days: ['מנחה וארוחת צהריים','חוגים','היסטוריה','מנחה וארוחת צהריים','מנחה וארוחת צהריים', null] },
+            { id: 'p1430', time: '14:30', type: 'score', days: ['כישורי חיים','חוגים','העשרה','תנ"ך','נביא', null] },
+            { id: 'p1515', time: '15:15', type: 'score', days: ['ספרות','חוגים','העשרה','גיאוגרפיה','בר מצווה', null] }
+        ];
+        const subjectTone = (name) => {
+            if (!name) return '';
+            if (TEFILA.has(name)) return 'tefila-cell';
+            if (KODESH.has(name)) return 'kodesh-cell';
+            return 'chol-cell';
+        };
         const MAX_WEEK = 52;
 
         const debounce = (fn, delay) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), delay); }; };
@@ -585,6 +655,7 @@
         const createDefaultData = () => ({
             setupComplete: false,
             className: '',
+            adminAuth: { ...ADMIN_DEFAULT },
             teachers: [],
             students: [],
             noteTemplates: [],
@@ -597,7 +668,11 @@
         });
         const normalize = (data) => {
             const d = data || {};
+            if (!d.adminAuth || !d.adminAuth.user) d.adminAuth = { ...ADMIN_DEFAULT };
             if (!Array.isArray(d.teachers)) d.teachers = [];
+            d.teachers.forEach(t => {
+                if (!t.username && t.name) t.username = t.name.replace(/\s+/g, '').toLowerCase();
+            });
             if (!Array.isArray(d.students)) d.students = [];
             if (!Array.isArray(d.noteTemplates)) d.noteTemplates = [];
             if (!d.weeks) d.weeks = {};
@@ -630,14 +705,15 @@
             return earned + adj;
         };
 
-        const views = ['login-page', 'setup-page', 'main-app', 'manage-panel'];
+        const views = ['login-page', 'setup-page', 'main-app', 'manage-panel', 'admin-panel'];
         const showView = (id) => views.forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
         const openModal = (id) => document.getElementById(id)?.classList.add('show');
         const closeModal = (el) => {
             const m = typeof el === 'string' ? document.getElementById(el) : el?.closest?.('.modal');
             m?.classList.remove('show');
         };
-        const isHomeroom = () => currentUser?.role === 'homeroom';
+        const isHomeroom = () => currentUser?.role === 'homeroom' || currentUser?.role === 'admin';
+        const isAdmin = () => currentUser?.role === 'admin';
 
         document.getElementById('generic-modal-container').innerHTML = `
             <div class="modal" id="store-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>חנות כיתתית</h2><p id="store-header"></p><div id="store-items"></div></div></div>
@@ -677,47 +753,57 @@
             m.querySelectorAll('.close-btn').forEach(btn => btn.onclick = () => closeModal(m));
         });
 
+        const isPhoneUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         const applyCompact = (on) => {
             compactMode = on;
             document.body.classList.toggle('compact-ui', on);
-            document.getElementById('compact-bar').style.display = on ? 'flex' : 'none';
             if (on) {
                 mobileDayIndex = -1;
+                if (currentUser && !document.getElementById('main-app').classList.contains('hidden')) {
+                    renderTable();
+                    renderMobileDayView();
+                    document.getElementById('total-points-display').textContent = calculateClassPoints();
+                }
+            } else if (currentUser && !document.getElementById('main-app').classList.contains('hidden')) {
                 renderAll();
             }
         };
-        const openCompactPopup = () => {
-            const url = new URL(location.href);
-            url.searchParams.set('mode', 'compact');
-            const popup = window.open(url.toString(), 'lesson-overlay', 'popup=yes,width=300,height=760,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes');
-            if (!popup) {
-                applyCompact(true);
-                showToast('החלונית נחסמה. עברנו למצב מצומצם באותו חלון.', true);
-            }
+        const syncCompactFromWindow = () => {
+            const onMain = currentUser && !document.getElementById('main-app').classList.contains('hidden');
+            const should = onMain && !isPhoneUA && window.innerWidth <= 460;
+            if (should !== compactMode) applyCompact(should);
         };
+        window.addEventListener('resize', syncCompactFromWindow);
+
+        const defaultLessonName = (period, dayIdx) => period.days[dayIdx] || '';
+        const cellIdFor = (period, dayIdx) => `${period.id}-${dayIdx}`;
+        const scoredPeriodsForDay = (dayIdx) => PERIODS.filter(p => p.type === 'score' && p.days[dayIdx]);
 
         const getMobileDayIndex = () => {
             if (mobileDayIndex >= 0) return mobileDayIndex;
             const { dayIndex } = getSystemStatus();
             return Math.min(Math.max(dayIndex, 0), 5);
         };
-        const lessonOptionsForDay = (week, dayIdx) => {
-            const schedule = defaultSchedule[dayIdx + 1] || { lessons: 8 };
-            const opts = [];
-            for (let lesson = 1; lesson <= schedule.lessons; lesson++) {
-                const cellId = `${lesson}-${dayIdx}`;
-                const label = lesson === 1 ? 'תפילה' : `שיעור ${lesson}`;
-                const name = appData.lessonNames?.[cellId] || (lesson === 1 ? 'תפילה' : '');
-                opts.push({ cellId, week, label: name ? `${label} — ${name}` : label });
-            }
-            return opts;
-        };
+        const lessonOptionsForDay = (week, dayIdx) => scoredPeriodsForDay(dayIdx).map(p => {
+            const cellId = cellIdFor(p, dayIdx);
+            const name = appData.lessonNames?.[cellId] || defaultLessonName(p, dayIdx);
+            return { cellId, week, label: `${p.time} — ${name}` };
+        });
         const starsForCell = (week, cellId) => (appData.weeks?.[week]?.[cellId]?.stars) || [];
 
         const updateWeekDisplay = (weekNum) => {
             document.getElementById('week-dates-text').textContent = getWeekDateRange(weekNum);
             document.getElementById('week-hebrew-text').textContent = getWeekHebrewRange(weekNum);
         };
+
+        const scoreSelectHtml = (cellId, score, extraClass = '') => `
+            <select class="${extraClass}" data-id="${cellId}" data-cell-id="${cellId}">
+                <option value="-1" ${score == -1 ? 'selected' : ''}>-</option>
+                <option value="0" ${score == 0 ? 'selected' : ''}>0</option>
+                <option value="1" ${score == 1 ? 'selected' : ''}>1</option>
+                <option value="2" ${score == 2 ? 'selected' : ''}>2</option>
+                <option value="3" ${score == 3 ? 'selected' : ''}>3</option>
+            </select>`;
 
         const renderTable = () => {
             const sys = getSystemStatus();
@@ -734,36 +820,32 @@
             }
             document.getElementById('table-header').innerHTML = headers;
             const weekData = appData.weeks[week] || {};
-            const maxLessons = Math.max(...Object.values(defaultSchedule).map(d => d.lessons));
             let rows = '';
-            for (let i = 1; i <= maxLessons; i++) {
-                const label = i === 1 ? 'תפילה' : `שיעור ${i}`;
-                rows += `<tr><td>${label}</td>`;
-                rows += days.slice(1).map((_, col) => {
-                    const dayIndex = col + 1;
+            PERIODS.forEach((period) => {
+                rows += `<tr><td class="time-col">${period.time}</td>`;
+                rows += [0,1,2,3,4,5].map((col) => {
                     const isToday = (week === sys.week) && (col === sys.dayIndex);
                     const hl = isToday ? 'highlight-today' : '';
-                    if (i > (defaultSchedule[dayIndex]?.lessons || 0)) return `<td class="${hl}"></td>`;
-                    const cellId = `${i}-${col}`;
+                    const subj = defaultLessonName(period, col);
+                    if (period.type === 'break') {
+                        if (col === 5 && !subj) return `<td class="${hl} off-cell">שבת שלום</td>`;
+                        return `<td class="${hl} break-cell">${subj || ''}</td>`;
+                    }
+                    if (!subj) return `<td class="${hl} off-cell">${col === 5 ? 'שבת שלום' : ''}</td>`;
+                    const cellId = cellIdFor(period, col);
                     const cell = weekData[cellId] || { score: -1 };
                     const scoreClass = cell.score > -1 ? `score-${cell.score}` : '';
-                    const isTefila = i === 1;
-                    const lessonName = appData.lessonNames[cellId] || (isTefila ? 'תפילה' : '');
+                    const lessonName = appData.lessonNames[cellId] || subj;
                     const starCount = (cell.stars || []).length;
-                    return `<td class="${hl}"><div class="cell-content ${scoreClass}" data-cell-id="${cellId}">
-                        <input type="text" class="lesson-name-input" value="${escapeHtml(lessonName)}" data-id="${cellId}" ${isTefila ? 'readonly' : ''} placeholder="שם שיעור">
-                        <select class="point-select" data-id="${cellId}">
-                            <option value="-1" ${cell.score == -1 ? 'selected' : ''}>-</option>
-                            <option value="0" ${cell.score == 0 ? 'selected' : ''}>0</option>
-                            <option value="1" ${cell.score == 1 ? 'selected' : ''}>1</option>
-                            <option value="2" ${cell.score == 2 ? 'selected' : ''}>2</option>
-                            <option value="3" ${cell.score == 3 ? 'selected' : ''}>3</option>
-                        </select>
+                    const tone = cell.score > -1 ? '' : subjectTone(subj);
+                    return `<td class="${hl} ${tone}"><div class="cell-content ${scoreClass}" data-cell-id="${cellId}">
+                        <div class="cell-subject">${escapeHtml(lessonName)}</div>
+                        ${scoreSelectHtml(cellId, cell.score, 'point-select')}
                         <button type="button" class="star-lesson-btn ${starCount ? 'has-stars' : ''}" data-cell-id="${cellId}" title="מצטיינים בשיעור">⭐${starCount ? starCount : ''}</button>
                     </div></td>`;
                 }).join('');
                 rows += `</tr>`;
-            }
+            });
             document.getElementById('table-body').innerHTML = rows;
         };
 
@@ -773,8 +855,10 @@
             const week = appData.currentWeek;
             const dayDate = getColDate(week, dayIdx);
             const he = toHebrewDate(dayDate);
-            document.getElementById('mobile-day-title').textContent = dayNames[dayIdx];
-            document.getElementById('compact-day-label').textContent = `${dayNames[dayIdx]}${he ? ' · ' + he.day + ' ' + he.month : ''}`;
+            const titleEl = document.getElementById('mobile-day-title');
+            if (titleEl) titleEl.textContent = dayNames[dayIdx];
+            const compactLabel = document.getElementById('compact-day-label');
+            if (compactLabel) compactLabel.textContent = `${dayNames[dayIdx]}${he ? ' · ' + he.day + ' ' + he.month : ''}`;
             if (compactMode) {
                 document.getElementById('week-hebrew-text').textContent = he ? `${he.day} ${he.month}` : '';
                 document.getElementById('week-dates-text').textContent = `${String(dayDate.getDate()).padStart(2,'0')}.${String(dayDate.getMonth()+1).padStart(2,'0')}`;
@@ -782,20 +866,29 @@
             document.getElementById('mobile-prev-day').disabled = dayIdx <= 0;
             document.getElementById('mobile-next-day').disabled = dayIdx >= 5;
             const weekData = appData.weeks[week] || {};
-            const schedule = defaultSchedule[dayIdx + 1] || { lessons: 8 };
             const isToday = (week === sys.week) && (dayIdx === Math.min(Math.max(sys.dayIndex, 0), 5));
             let html = '';
-            for (let lesson = 1; lesson <= schedule.lessons; lesson++) {
-                const cellId = `${lesson}-${dayIdx}`;
+            PERIODS.forEach((period) => {
+                const subj = defaultLessonName(period, dayIdx);
+                if (period.type === 'break') {
+                    if (compactMode) return;
+                    html += `<div class="mobile-lesson-card" style="background:#e0f2f1;"><div class="mobile-lesson-row"><span class="mobile-lesson-label">${period.time}</span><strong>${subj || 'שבת שלום'}</strong></div></div>`;
+                    return;
+                }
+                if (!subj) {
+                    if (compactMode) return;
+                    if (dayIdx === 5) html += `<div class="mobile-lesson-card"><div class="mobile-lesson-row"><span class="mobile-lesson-label">${period.time}</span><span>🕯️ שבת שלום</span></div></div>`;
+                    return;
+                }
+                const cellId = cellIdFor(period, dayIdx);
                 const cell = weekData[cellId] || { score: -1 };
                 const score = cell.score;
-                const isTefila = lesson === 1;
-                const lessonName = appData.lessonNames[cellId] || (isTefila ? 'תפילה' : '');
+                const lessonName = appData.lessonNames[cellId] || subj;
                 const starCount = (cell.stars || []).length;
                 html += `<div class="mobile-lesson-card ${score > -1 ? 'score-'+score : ''} ${isToday ? 'today-card' : ''}">
                     <div class="mobile-lesson-row">
-                        <span class="mobile-lesson-label">${isTefila ? 'תפילה' : 'שיעור ' + lesson}</span>
-                        <input type="text" class="mobile-lesson-name-input" value="${escapeHtml(lessonName)}" data-cell-id="${cellId}" ${isTefila ? 'readonly' : ''} placeholder="שם שיעור">
+                        <span class="mobile-lesson-label">${period.time}</span>
+                        <span class="mobile-lesson-name-input" style="border:none;font-weight:800;">${escapeHtml(lessonName)}</span>
                         <select class="mobile-point-select ${score > -1 ? 'has-score-'+score : ''}" data-cell-id="${cellId}">
                             <option value="-1" ${score == -1 ? 'selected' : ''}>—</option>
                             <option value="0" ${score == 0 ? 'selected' : ''}>0</option>
@@ -806,8 +899,8 @@
                         <button type="button" class="star-lesson-btn ${starCount ? 'has-stars' : ''}" data-cell-id="${cellId}">⭐${starCount ? starCount : ''}</button>
                     </div>
                 </div>`;
-            }
-            document.getElementById('mobile-lessons-container').innerHTML = html;
+            });
+            document.getElementById('mobile-lessons-container').innerHTML = html || '<div class="mobile-empty-day">אין שיעורים ביום זה</div>';
         };
 
         const renderAll = () => {
@@ -818,9 +911,11 @@
             document.getElementById('prev-week-btn').disabled = appData.currentWeek <= 1;
             document.getElementById('next-week-btn').disabled = appData.currentWeek >= MAX_WEEK;
             document.querySelectorAll('.homeroom-only').forEach(el => el.classList.toggle('hidden', !isHomeroom()));
+            document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin()));
             updateWeekDisplay(appData.currentWeek);
             renderTable();
             renderMobileDayView();
+            syncCompactFromWindow();
         };
 
         const fillLessonSelect = (selectEl, preferredCellId) => {
@@ -1043,11 +1138,6 @@
                     <div class="student-tile-name">${escapeHtml(s.name)}</div>
                     <div class="student-tile-meta">${s.parentPhone ? 'יש טלפון הורים' : 'אין טלפון הורים'}</div>
                 </div>`).join('') || '<p>אין תלמידים עדיין.</p>';
-            document.getElementById('teachers-list').innerHTML = (appData.teachers || []).map(t => `
-                <li class="admin-list-item">
-                    <span>${escapeHtml(t.name)} ${t.role === 'homeroom' ? '(מחנך/ת)' : '(מורה)'}</span>
-                    ${t.role === 'homeroom' ? '' : `<button class="utility-btn danger delete-teacher-btn" data-id="${t.id}">מחק</button>`}
-                </li>`).join('');
             document.getElementById('notes-list').innerHTML = (appData.noteTemplates || []).map(n => `
                 <li class="admin-list-item">
                     <span><b>${escapeHtml(n.title)}</b><br><small>${escapeHtml(n.body)}</small></span>
@@ -1072,8 +1162,27 @@
             openModal('student-modal');
         };
 
-        const persistSession = () => localStorage.setItem(SESSION_KEY, JSON.stringify({ id: currentUser.id, name: currentUser.name, role: currentUser.role }));
+        const persistSession = () => localStorage.setItem(SESSION_KEY, JSON.stringify({ id: currentUser.id, name: currentUser.name, role: currentUser.role, username: currentUser.username || '' }));
         const clearSession = () => localStorage.removeItem(SESSION_KEY);
+
+        const renderAdminTeachers = () => {
+            const auth = appData.adminAuth || ADMIN_DEFAULT;
+            document.getElementById('admin-settings-user').value = auth.user || '';
+            document.getElementById('admin-teachers-list').innerHTML = (appData.teachers || []).map(t => `
+                <li class="admin-list-item">
+                    <span><b>${escapeHtml(t.name)}</b><br><small>משתמש: ${escapeHtml(t.username || '—')} · ${t.role === 'homeroom' ? 'מחנך/ת' : 'מורה'}</small></span>
+                    <div style="display:flex;gap:6px;">
+                        <button class="utility-btn admin-action reset-teacher-pass-btn" data-id="${t.id}">אפס סיסמה</button>
+                        <button class="utility-btn danger delete-teacher-btn" data-id="${t.id}">מחק</button>
+                    </div>
+                </li>`).join('') || '<p>אין מורים עדיין.</p>';
+        };
+        const enterAdmin = () => {
+            currentUser = { id: 'admin', name: 'מנהל', role: 'admin', username: (appData.adminAuth || ADMIN_DEFAULT).user };
+            persistSession();
+            renderAdminTeachers();
+            showView('admin-panel');
+        };
 
         const enterApp = (teacher) => {
             currentUser = teacher;
@@ -1081,7 +1190,6 @@
             const sys = getSystemStatus();
             if (!appData.currentWeek) appData.currentWeek = sys.week;
             showView('main-app');
-            applyCompact(compactMode);
             renderAll();
         };
 
@@ -1097,8 +1205,10 @@
         const loadApp = async () => {
             try {
                 const doc = await dbRef.get();
-                if (doc.exists) appData = normalize(doc.data());
-                else {
+                if (doc.exists) {
+                    appData = normalize(doc.data());
+                    if (!doc.data().adminAuth) await updateDB('adminAuth', appData.adminAuth);
+                } else {
                     appData = createDefaultData();
                     await saveFull();
                 }
@@ -1109,9 +1219,11 @@
                     if (savedWeek) appData.currentWeek = savedWeek;
                     if (currentUser && !document.getElementById('main-app').classList.contains('hidden')) renderAll();
                     if (!document.getElementById('manage-panel').classList.contains('hidden')) renderManage();
+                    if (!document.getElementById('admin-panel').classList.contains('hidden')) renderAdminTeachers();
                 });
                 document.getElementById('setup-hint').classList.toggle('hidden', !!appData.setupComplete);
                 const session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+                if (session?.role === 'admin') return enterAdmin();
                 if (session) {
                     const teacher = (appData.teachers || []).find(t => t.id === session.id);
                     if (teacher) return enterApp(teacher);
@@ -1131,6 +1243,7 @@
             if (appData.setupComplete) return showToast('הכיתה כבר הוגדרה.');
             const className = document.getElementById('setup-class-name').value.trim();
             const name = document.getElementById('setup-teacher-name').value.trim();
+            const username = document.getElementById('setup-teacher-user').value.trim();
             const pass = document.getElementById('setup-teacher-pass').value;
             const students = document.getElementById('setup-students').value.split('\n').map(n => n.trim()).filter(Boolean)
                 .map(n => ({ id: uid(), name: n, parentPhone: '' }));
@@ -1138,7 +1251,8 @@
                 ...createDefaultData(),
                 setupComplete: true,
                 className,
-                teachers: [{ id: uid(), name, password: pass, role: 'homeroom' }],
+                adminAuth: { ...ADMIN_DEFAULT },
+                teachers: [{ id: uid(), name, username, password: pass, role: 'homeroom' }],
                 students,
                 currentWeek: getSystemStatus().week
             });
@@ -1148,16 +1262,25 @@
 
         document.getElementById('login-form').onsubmit = (e) => {
             e.preventDefault();
+            const username = document.getElementById('login-name').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            const admin = appData.adminAuth || ADMIN_DEFAULT;
+            if ((username === admin.user && pass === admin.pass) || (username === ADMIN_DEFAULT.user && pass === ADMIN_DEFAULT.pass)) {
+                e.target.reset();
+                enterAdmin();
+                return;
+            }
             if (!appData.setupComplete) {
                 document.getElementById('setup-hint').classList.remove('hidden');
                 return showToast('צריך להקים כיתה חדשה לפני הכניסה.');
             }
-            const name = document.getElementById('login-name').value.trim();
-            const pass = document.getElementById('login-pass').value;
-            const teacher = (appData.teachers || []).find(t => t.password === pass && (!name || t.name === name || t.name.includes(name) || name.includes(t.name)));
-            const byPass = (appData.teachers || []).find(t => t.password === pass);
-            const found = teacher || byPass;
-            if (!found) return showToast('שם או סיסמה שגויים.');
+            const found = (appData.teachers || []).find(t =>
+                t.password === pass && (
+                    (t.username && t.username === username) ||
+                    t.name === username
+                )
+            );
+            if (!found) return showToast('שם משתמש או סיסמה שגויים.');
             e.target.reset();
             enterApp(found);
         };
@@ -1165,14 +1288,58 @@
         document.getElementById('logout-btn').onclick = logout;
         document.getElementById('open-manage-btn').onclick = () => { if (!isHomeroom()) return; renderManage(); showView('manage-panel'); };
         document.getElementById('close-manage-btn').onclick = () => { showView('main-app'); renderAll(); };
-        document.getElementById('compact-mode-btn').onclick = () => {
-            if (window.matchMedia('(display-mode: standalone)').matches || window.outerWidth < 500) applyCompact(true);
-            else openCompactPopup();
+        document.getElementById('admin-login-key-btn').onclick = () => {
+            document.getElementById('login-name').value = ADMIN_DEFAULT.user;
+            document.getElementById('login-pass').focus();
+            showToast('הזינו את סיסמת המנהל לניהול מורים.', true);
         };
-        document.getElementById('exit-compact-btn').onclick = () => {
-            if (isCompactQuery) { location.href = './index.html'; return; }
-            applyCompact(false);
-            renderAll();
+        document.getElementById('admin-logout-btn').onclick = logout;
+        document.getElementById('admin-enter-class-btn').onclick = () => {
+            if (!appData.setupComplete) return showToast('קודם יש להקים כיתה.');
+            enterApp({ id: 'admin', name: 'מנהל', role: 'admin', username: (appData.adminAuth || ADMIN_DEFAULT).user });
+        };
+        document.getElementById('open-admin-from-app-btn').onclick = () => enterAdmin();
+        document.getElementById('admin-add-teacher-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('admin-teacher-name').value.trim();
+            const username = document.getElementById('admin-teacher-user').value.trim();
+            const password = document.getElementById('admin-teacher-pass').value;
+            const role = document.getElementById('admin-teacher-role').value;
+            if ((appData.teachers || []).some(t => t.username === username || t.password === password)) {
+                return showToast('שם משתמש או סיסמה כבר בשימוש.');
+            }
+            appData.teachers.push({ id: uid(), name, username, password, role });
+            e.target.reset();
+            await updateDB('teachers', appData.teachers);
+            renderAdminTeachers();
+        };
+        document.getElementById('admin-teachers-list').onclick = async (e) => {
+            const del = e.target.closest('.delete-teacher-btn');
+            const reset = e.target.closest('.reset-teacher-pass-btn');
+            if (reset) {
+                const t = appData.teachers.find(x => x.id === reset.dataset.id);
+                const newPass = prompt('סיסמה חדשה עבור ' + (t?.name || ''));
+                if (!newPass) return;
+                t.password = newPass;
+                await updateDB('teachers', appData.teachers);
+                renderAdminTeachers();
+                showToast('הסיסמה עודכנה.', true);
+                return;
+            }
+            if (!del) return;
+            if (!confirm('למחוק את המורה?')) return;
+            appData.teachers = appData.teachers.filter(t => t.id !== del.dataset.id);
+            await updateDB('teachers', appData.teachers);
+            renderAdminTeachers();
+        };
+        document.getElementById('admin-settings-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const user = document.getElementById('admin-settings-user').value.trim();
+            const pass = document.getElementById('admin-settings-pass').value;
+            appData.adminAuth = { user, pass: pass || appData.adminAuth.pass };
+            await updateDB('adminAuth', appData.adminAuth);
+            document.getElementById('admin-settings-pass').value = '';
+            showToast('פרטי המנהל נשמרו.', true);
         };
 
         document.getElementById('next-week-btn').onclick = () => {
@@ -1201,8 +1368,22 @@
             if (!appData.weeks[week]) appData.weeks[week] = {};
             if (!appData.weeks[week][cellId]) appData.weeks[week][cellId] = { score: -1, stars: [] };
             appData.weeks[week][cellId].score = score;
+            const mobileSel = document.querySelector(`.mobile-point-select[data-cell-id="${cellId}"]`);
+            if (mobileSel) {
+                mobileSel.className = `mobile-point-select ${score > -1 ? 'has-score-' + score : ''}`;
+                const card = mobileSel.closest('.mobile-lesson-card');
+                if (card) {
+                    const today = card.classList.contains('today-card');
+                    card.className = `mobile-lesson-card ${score > -1 ? 'score-' + score : ''} ${today ? 'today-card' : ''}`;
+                }
+            }
+            const deskSel = document.querySelector(`.point-select[data-id="${cellId}"]`);
+            if (deskSel) {
+                const box = deskSel.closest('.cell-content');
+                if (box) box.className = `cell-content ${score > -1 ? 'score-' + score : ''}`;
+            }
+            document.getElementById('total-points-display').textContent = calculateClassPoints();
             await updateDB(`weeks.${week}.${cellId}`, appData.weeks[week][cellId]);
-            renderAll();
         };
         const saveLessonName = (cellId, value) => {
             appData.lessonNames[cellId] = value;
@@ -1313,23 +1494,6 @@
                 renderManage();
             }
         });
-        document.getElementById('add-teacher-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('new-teacher-name').value.trim();
-            const password = document.getElementById('new-teacher-pass').value;
-            if ((appData.teachers || []).some(t => t.password === password)) return showToast('הסיסמה כבר בשימוש. בחרו סיסמה אחרת.');
-            appData.teachers.push({ id: uid(), name, password, role: 'teacher' });
-            e.target.reset();
-            await updateDB('teachers', appData.teachers);
-            renderManage();
-        };
-        document.getElementById('teachers-list').onclick = async (e) => {
-            const btn = e.target.closest('.delete-teacher-btn');
-            if (!btn) return;
-            appData.teachers = appData.teachers.filter(t => t.id !== btn.dataset.id);
-            await updateDB('teachers', appData.teachers);
-            renderManage();
-        };
         document.getElementById('add-note-form').onsubmit = async (e) => {
             e.preventDefault();
             appData.noteTemplates.push({
