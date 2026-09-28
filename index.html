@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>הכח שבי — כיתה</title>
+    <meta name="theme-color" content="#1976D2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary-color: #1976D2;
+            --primary-dark: #0D47A1;
+            --secondary-color: #ffca28;
+            --personal-color: #009688;
+            --personal-color-dark: #00796B;
+            --admin-color: #455A64;
+            --background-start: #e3f2fd;
+            --background-end: #bbdefb;
+            --text-color: #333;
+            --light-gray: #e0e0e0;
+            --dark-gray: #757575;
+            --white: #fff;
+            --danger-color: #d32f2f;
+            --warning-color: #f57c00;
+            --score-2-color: #fdd835;
+            --success-color: #388e3c;
+            --font-family: 'Assistant', sans-serif;
+            --current-day-bg: rgba(25, 118, 210, 0.15);
+            --current-day-border: 3px solid #1565C0;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: var(--font-family);
+            background: linear-gradient(135deg, var(--background-start) 0%, var(--background-end) 100%);
+            color: var(--text-color);
+            margin: 0;
+            padding: clamp(8px, 2vw, 24px);
+            padding-top: max(clamp(8px,2vw,24px), env(safe-area-inset-top));
+            padding-bottom: max(clamp(8px,2vw,24px), env(safe-area-inset-bottom));
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .main-container {
+            max-width: min(1400px, calc(100vw - 32px));
+            width: 100%;
+            margin: 16px auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+        }
+        .hidden { display: none !important; }
+        header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--light-gray); padding-bottom: 18px; margin-bottom: 22px; }
+        header h1 { color: var(--primary-color); margin: 0; font-weight: 800; font-size: 1.8em; }
+        .utility-btn, .nav-btn, .action-btn {
+            background-color: var(--primary-color); color: white; border: none; padding: 10px 18px;
+            border-radius: 10px; cursor: pointer; font-size: 1em; font-weight: 600;
+            font-family: var(--font-family); transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .utility-btn:hover, .nav-btn:hover, .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .utility-btn:active, .nav-btn:active, .action-btn:active { transform: scale(0.96); }
+        .utility-btn.success { background-color: #2e7d32; }
+        .utility-btn.gold { background: linear-gradient(135deg, #f9a825, #f57f17); color: #333; }
+        .utility-btn.admin-action { background-color: var(--admin-color); }
+        .utility-btn.danger { background-color: var(--danger-color); }
+        .action-btn { padding: 12px 22px; font-size: 1.05em; }
+        #login-page, #setup-page { text-align: center; max-width: 520px; }
+        #login-page h1, #setup-page h1 { font-size: 2.4em; color: var(--primary-color); margin-bottom: 8px; }
+        .subtitle { color: var(--dark-gray); margin-bottom: 28px; }
+        .login-card { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: white; border-radius: 22px; padding: 28px 22px; }
+        .form-group { margin-bottom: 14px; text-align: right; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 700; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 12px; border: 1px solid var(--dark-gray); border-radius: 8px; font-size: 1em; font-family: var(--font-family);
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(25,118,210,0.15);
+        }
+        .modal-btn { background: var(--primary-color); color: white; padding: 14px 20px; border: none; border-radius: 10px; cursor: pointer; width: 100%; font-size: 1.15em; font-weight: 700; font-family: var(--font-family); }
+        .class-scoring-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin-bottom: 18px; }
+        .header-top-row { display: contents; }
+        .week-navigation { display: flex; align-items: center; gap: 12px; justify-content: center; }
+        #week-display-container {
+            text-align: center; min-width: 160px;
+            background: linear-gradient(135deg, rgba(25,118,210,0.08), rgba(25,118,210,0.03));
+            border: 1.5px solid rgba(25,118,210,0.2); border-radius: 14px; padding: 8px 16px;
+        }
+        .week-hebrew { font-size: 1.05em; font-weight: 800; color: var(--primary-color); display: block; }
+        .week-gregorian { font-size: 0.78em; font-weight: 600; color: var(--dark-gray); direction: ltr; display: block; opacity: 0.75; }
+        .total-points-container {
+            text-align: center; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: var(--white); padding: 5px 20px; border-radius: 12px; min-width: 130px;
+        }
+        #total-points-display { font-size: 2.2em; font-weight: 700; line-height: 1; }
+        .total-points-container h2 { font-size: 0.9em; margin: 0 0 5px 0; opacity: 0.9; }
+        .header-actions-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; grid-column: 3; }
+        #class-table-wrapper { overflow-x: auto; width: 100%; border: 2px solid rgba(25,118,210,0.25); border-radius: 14px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 800px; }
+        th, td { border: 1.5px solid #c5d8f0; padding: 2px; text-align: center; vertical-align: top; }
+        th { background-color: rgba(25, 118, 210, 0.12); font-weight: 700; padding: 10px 5px; }
+        td:first-child { font-weight: 600; background-color: rgba(25,118,210,0.04); padding-top: 25px; font-size: 0.9em; }
+        .cell-content { padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 88px; border-radius: 6px; }
+        .highlight-today { background-color: var(--current-day-bg) !important; border-left: var(--current-day-border); border-right: var(--current-day-border); }
+        th.highlight-today { border-top: var(--current-day-border); }
+        .lesson-name-input { width: 95%; border: none; border-bottom: 1px solid #b0b0b0; padding: 4px; font-size: 0.9em; text-align: center; background: transparent; font-weight: 600; font-family: var(--font-family); }
+        .lesson-name-input:focus { outline: none; border-bottom: 2px solid var(--primary-color); }
+        .lesson-name-input[readonly] { font-weight: 700; color: var(--primary-color); border: none; cursor: default; }
+        .point-select { width: 50px; padding: 4px; border-radius: 8px; border: 1px solid var(--dark-gray); text-align: center; font-size: 0.9em; }
+        .cell-content.score-0 { background-color: var(--danger-color); color: white; }
+        .cell-content.score-1 { background-color: var(--warning-color); color: white; }
+        .cell-content.score-2 { background-color: var(--score-2-color); color: var(--text-color); }
+        .cell-content.score-3 { background-color: var(--success-color); color: white; }
+        .star-lesson-btn {
+            background: none; border: none; cursor: pointer; font-size: 1.05em; opacity: 0.55; padding: 0; line-height: 1;
+        }
+        .star-lesson-btn.has-stars { opacity: 1; }
+        .class-actions { margin-top: 20px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+        #mobile-day-view { display: none; }
+        .mobile-day-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 14px; gap: 8px; }
+        .mobile-day-title {
+            font-size: 1.2em; font-weight: 800; color: var(--primary-color); text-align: center; flex: 1;
+            background: linear-gradient(135deg, rgba(25,118,210,0.08), rgba(25,118,210,0.03));
+            border-radius: 14px; padding: 7px 14px; border: 1.5px solid rgba(25,118,210,0.15);
+        }
+        .mobile-day-btn {
+            background: var(--primary-color); color: white; border: none; border-radius: 50%;
+            width: 46px; height: 46px; font-size: 1.4em; cursor: pointer;
+        }
+        .mobile-lesson-card {
+            border-radius: 16px; margin-bottom: 10px; overflow: hidden; border: 1.5px solid var(--light-gray); background: #f8fafd;
+        }
+        .mobile-lesson-card.score-0 { border-color: var(--danger-color); background: linear-gradient(to left, rgba(211,47,47,0.04), rgba(211,47,47,0.09)); box-shadow: -4px 0 0 0 var(--danger-color); }
+        .mobile-lesson-card.score-1 { border-color: var(--warning-color); background: linear-gradient(to left, rgba(245,124,0,0.04), rgba(245,124,0,0.09)); box-shadow: -4px 0 0 0 var(--warning-color); }
+        .mobile-lesson-card.score-2 { border-color: var(--score-2-color); background: linear-gradient(to left, rgba(253,216,53,0.05), rgba(253,216,53,0.12)); box-shadow: -4px 0 0 0 var(--score-2-color); }
+        .mobile-lesson-card.score-3 { border-color: var(--success-color); background: linear-gradient(to left, rgba(56,142,60,0.04), rgba(56,142,60,0.09)); box-shadow: -4px 0 0 0 var(--success-color); }
+        .mobile-lesson-card.today-card { box-shadow: 0 4px 16px rgba(25,118,210,0.18); border-top: 2.5px solid var(--primary-color); }
+        .mobile-lesson-row { display: flex; align-items: center; padding: 13px 14px; gap: 10px; }
+        .mobile-lesson-label { font-weight: 800; color: var(--dark-gray); font-size: 0.88em; min-width: 62px; }
+        .mobile-lesson-name-input { flex: 1; border: none; border-bottom: 1.5px solid rgba(0,0,0,0.1); padding: 4px 6px; font-size: 1em; background: transparent; font-family: var(--font-family); text-align: right; }
+        .mobile-point-select { border: 2px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 8px 4px; font-size: 1em; background: white; min-width: 56px; min-height: 44px; font-weight: 700; font-family: var(--font-family); }
+        .mobile-point-select.has-score-0 { background: var(--danger-color); color: white; border-color: var(--danger-color); }
+        .mobile-point-select.has-score-1 { background: var(--warning-color); color: white; border-color: var(--warning-color); }
+        .mobile-point-select.has-score-2 { background: var(--score-2-color); color: #333; border-color: var(--score-2-color); }
+        .mobile-point-select.has-score-3 { background: var(--success-color); color: white; border-color: var(--success-color); }
+        .modal { position: fixed; z-index: 1000; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: #fefefe; padding: 22px; border-radius: 16px; width: 95%; max-width: 640px; position: relative; text-align: right; max-height: 90vh; overflow-y: auto; }
+        .close-btn { color: #aaa; position: absolute; left: 15px; top: 8px; font-size: 32px; font-weight: bold; cursor: pointer; }
+        .modal h2 { text-align: center; color: var(--primary-color); margin-top: 0; }
+        #store-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 18px; max-height: 50vh; overflow-y: auto; padding: 8px; }
+        .product-card { background: var(--white); border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; }
+        .product-image-container { width: 100%; height: 140px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; font-size: 2.4em; }
+        .product-image-container img { width: 100%; height: 100%; object-fit: cover; }
+        .product-info { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; }
+        .product-purchase-area { display: flex; justify-content: space-between; align-items: center; margin-top: auto; gap: 8px; }
+        .product-price { font-weight: 800; font-size: 1.2em; color: var(--primary-color); }
+        button:disabled { background-color: #bdbdbd !important; cursor: not-allowed !important; transform: none !important; opacity: 0.7; }
+        .student-chip {
+            background: #e3f2fd; color: var(--primary-dark); border: 2px solid #90caf9; padding: 8px 14px;
+            border-radius: 10px; font-size: 1.05em; font-weight: 700; cursor: pointer; font-family: var(--font-family);
+        }
+        .student-chip.selected { background: var(--primary-color); color: white; border-color: #0D47A1; }
+        #student-chip-list { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .admin-list { list-style: none; padding: 0; margin: 0; }
+        .admin-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--light-gray); gap: 8px; }
+        .manage-section { background: #fff; padding: 18px; margin-bottom: 18px; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .manage-section h2 { margin: 0 0 12px; color: var(--admin-color); border-bottom: 2px solid #cfd8dc; padding-bottom: 8px; font-size: 1.2em; }
+        .student-tile {
+            background: linear-gradient(145deg, #ffffff, #f0f7ff); border-radius: 16px; border: 2px solid rgba(25,118,210,0.15);
+            padding: 16px 10px; text-align: center; cursor: pointer; min-height: 90px;
+        }
+        .student-tile-name { font-weight: 800; color: var(--primary-dark); }
+        .student-tile-meta { font-size: 0.82em; color: var(--dark-gray); margin-top: 6px; }
+        #student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+        .purchase-history-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px dashed #ccc; }
+        .wheel-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+        #wheel-canvas { max-width: 100%; height: auto; }
+        .wheel-pointer { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 24px solid #d32f2f; margin-bottom: -8px; z-index: 2; }
+        #wheel-winner { font-size: 1.4em; font-weight: 800; color: var(--success-color); min-height: 1.6em; text-align: center; }
+        #install-app-btn {
+            display: flex; margin: 18px auto 0; background: linear-gradient(135deg, #1976D2, #0D47A1); color: white;
+            border: none; padding: 14px 28px; border-radius: 30px; font-weight: 700; cursor: pointer; font-size: 1.05em;
+            align-items: center; gap: 10px; font-family: var(--font-family);
+        }
+        #update-notification {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #323232; color: white;
+            padding: 16px 24px; border-radius: 8px; display: none; align-items: center; gap: 15px; z-index: 2000; direction: rtl;
+        }
+        #update-notification.show { display: flex; }
+        #reload-btn { background: var(--secondary-color); color: #333; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .teacher-badge { font-size: 0.85em; color: var(--dark-gray); font-weight: 600; }
+
+        /* ===== חלונית שיעור — בלי מסגרת ===== */
+        body.compact-ui {
+            padding: 0 !important;
+            background: #f7fafc !important;
+            min-height: 100vh;
+        }
+        body.compact-ui .main-container {
+            margin: 0 !important;
+            padding: 8px 8px 12px !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            background: transparent !important;
+            max-width: none !important;
+            width: 100% !important;
+        }
+        body.compact-ui header,
+        body.compact-ui .class-actions,
+        body.compact-ui #class-table-wrapper,
+        body.compact-ui .header-actions-row,
+        body.compact-ui .week-navigation,
+        body.compact-ui #install-app-btn,
+        body.compact-ui #manage-panel { display: none !important; }
+        body.compact-ui #mobile-day-view { display: block !important; }
+        body.compact-ui .class-scoring-header {
+            display: flex !important;
+            grid-template-columns: none;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        body.compact-ui .header-top-row { display: flex; width: 100%; justify-content: space-between; align-items: center; }
+        body.compact-ui .total-points-container { min-width: unset; padding: 4px 12px; }
+        body.compact-ui #total-points-display { font-size: 1.5em; }
+        body.compact-ui #compact-bar { display: flex !important; }
+        #compact-bar {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        #compact-bar button { padding: 8px 10px; font-size: 0.85em; min-height: 40px; }
+
+        @media (max-width: 768px) {
+            body { padding: 6px; }
+            .main-container { margin: 6px auto; padding: 14px 12px; border-radius: 18px; max-width: 100%; }
+            header h1 { font-size: 1.35em; text-align: center; width: 100%; }
+            .class-scoring-header { display: flex; flex-direction: column; gap: 10px; }
+            .header-top-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+            .header-actions-row { justify-content: center; }
+            .header-actions-row .utility-btn { flex: 1; min-width: 120px; min-height: 44px; font-size: 0.88em; }
+            #class-table-wrapper { display: none; }
+            #mobile-day-view { display: block; }
+            input, select, textarea { font-size: 16px !important; }
+            .modal { align-items: flex-end; }
+            .modal-content { border-radius: 20px 20px 0 0; width: 100%; max-width: 100%; max-height: 88vh; }
+            #student-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+        }
+        @media (min-width: 769px) {
+            .class-scoring-header { display: grid; grid-template-columns: 1fr auto 1fr; }
+            .header-top-row { display: contents; }
+            .header-top-row .total-points-container { grid-column: 1; }
+            .header-top-row .week-navigation { grid-column: 2; }
+        }
+        @media (display-mode: standalone) {
+            body { padding: 0; }
+            .main-container { margin: 12px auto; }
+        }
+    </style>
+</head>
+<body>
+    <div id="update-notification"><span>יש גרסה חדשה לאפליקציה!</span><button id="reload-btn">עדכן עכשיו</button></div>
+
+    <div id="login-page" class="main-container">
+        <h1>הכח שבי</h1>
+        <p class="subtitle">מערכת כיתתית למורה ולכיתה אחת</p>
+        <div class="login-card">
+            <form id="login-form" autocomplete="off">
+                <div class="form-group" style="text-align:right;">
+                    <label style="color:#fff;">שם המורה</label>
+                    <input type="text" id="login-name" placeholder="לדוגמה: המורה רבקה" required>
+                </div>
+                <div class="form-group" style="text-align:right;">
+                    <label style="color:#fff;">סיסמה</label>
+                    <input type="password" id="login-pass" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="modal-btn" style="background:#ffca28;color:#333;">כניסה לכיתה</button>
+            </form>
+        </div>
+        <p id="setup-hint" class="hidden" style="margin-top:18px;color:#555;">עדיין אין כיתה במערכת. <a href="#" id="open-setup-link">הקמת כיתה חדשה</a></p>
+        <button id="install-app-btn"><span>📲</span><span id="install-btn-text">התקן את האפליקציה</span></button>
+    </div>
+
+    <div id="setup-page" class="main-container hidden">
+        <h1>הקמת כיתה</h1>
+        <p class="subtitle">פעם אחת בלבד — מחנך הכיתה מגדיר את הכיתה</p>
+        <form id="setup-form">
+            <div class="form-group"><label>שם הכיתה</label><input type="text" id="setup-class-name" placeholder="לדוגמה: כיתה ד2" required></div>
+            <div class="form-group"><label>שם המחנך/ת</label><input type="text" id="setup-teacher-name" required></div>
+            <div class="form-group"><label>סיסמת המחנך/ת</label><input type="password" id="setup-teacher-pass" required></div>
+            <div class="form-group"><label>רשימת תלמידים (אופציונלי, כל שם בשורה)</label><textarea id="setup-students" rows="8" placeholder="ישראל ישראלי&#10;רותי כהן"></textarea></div>
+            <button type="submit" class="modal-btn">צור כיתה והתחל</button>
+        </form>
+        <p style="margin-top:14px;"><a href="#" id="back-to-login-link">חזרה לכניסה</a></p>
+    </div>
+
+    <div id="main-app" class="main-container hidden">
+        <div id="compact-bar">
+            <strong id="compact-day-label"></strong>
+            <button type="button" id="exit-compact-btn" class="utility-btn">מסך מלא</button>
+        </div>
+        <header>
+            <div>
+                <h1 id="main-title">הכיתה</h1>
+                <div class="teacher-badge" id="logged-teacher-label"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                <button type="button" id="compact-mode-btn" class="utility-btn gold" title="חלונית שיעור בלי מסגרת">חלונית שיעור</button>
+                <button type="button" id="open-manage-btn" class="utility-btn admin-action homeroom-only">ניהול כיתה</button>
+                <button type="button" id="logout-btn" class="utility-btn">יציאה</button>
+            </div>
+        </header>
+
+        <div id="class-scoring-view">
+            <div class="class-scoring-header">
+                <div class="header-top-row">
+                    <div class="total-points-container">
+                        <h2>סה"כ נקודות</h2>
+                        <div id="total-points-display">0</div>
+                    </div>
+                    <div class="week-navigation">
+                        <button id="prev-week-btn" class="nav-btn">&laquo;</button>
+                        <div id="week-display-container">
+                            <span class="week-hebrew" id="week-hebrew-text"></span>
+                            <span class="week-gregorian" id="week-dates-text"></span>
+                        </div>
+                        <button id="next-week-btn" class="nav-btn">&raquo;</button>
+                    </div>
+                </div>
+                <div class="header-actions-row">
+                    <button type="button" id="parent-note-btn" class="utility-btn success">הערה להורים</button>
+                    <button type="button" id="outstanding-btn" class="utility-btn" style="background:#009688;">מצטייני שיעור</button>
+                    <button type="button" id="wheel-btn" class="utility-btn gold">גלגל מזל</button>
+                </div>
+            </div>
+            <main id="class-table-wrapper">
+                <table id="points-table">
+                    <thead><tr id="table-header"></tr></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </main>
+            <div id="mobile-day-view">
+                <div class="mobile-day-header">
+                    <button class="mobile-day-btn" id="mobile-prev-day">&#8250;</button>
+                    <div class="mobile-day-title" id="mobile-day-title"></div>
+                    <button class="mobile-day-btn" id="mobile-next-day">&#8249;</button>
+                </div>
+                <div id="mobile-lessons-container"></div>
+            </div>
+            <div class="class-actions">
+                <button type="button" id="open-class-store-btn" class="action-btn" style="background:var(--secondary-color);color:#333;">חנות כיתתית</button>
+                <button type="button" id="view-purchase-history-btn" class="action-btn">היסטוריית רכישות</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="manage-panel" class="main-container hidden">
+        <header>
+            <h1>ניהול כיתה</h1>
+            <button type="button" id="close-manage-btn" class="utility-btn">חזרה לכיתה</button>
+        </header>
+        <div class="manage-section">
+            <h2>תלמידים</h2>
+            <form id="add-students-form" class="form-group">
+                <textarea id="add-students-textarea" rows="5" placeholder="הדבק שמות, כל שם בשורה"></textarea>
+                <button type="submit" class="utility-btn" style="margin-top:8px;">הוסף תלמידים</button>
+            </form>
+            <div id="student-grid"></div>
+        </div>
+        <div class="manage-section">
+            <h2>מורים נוספים לכיתה</h2>
+            <p style="color:#666;font-size:0.92em;">מורה מקצועי יכול להיכנס ולתת נקודות כיתתיות, לרשום מצטיינים ולשלוח הערה להורים.</p>
+            <form id="add-teacher-form">
+                <div class="form-group"><label>שם המורה</label><input type="text" id="new-teacher-name" required></div>
+                <div class="form-group"><label>סיסמה</label><input type="password" id="new-teacher-pass" required></div>
+                <button type="submit" class="utility-btn">הוסף מורה</button>
+            </form>
+            <ul id="teachers-list" class="admin-list"></ul>
+        </div>
+        <div class="manage-section">
+            <h2>רשימת הערות להורים</h2>
+            <p style="color:#666;font-size:0.92em;">הערות חופשיות בלבד — בלי נקודות אישיות. הרשימה שייכת לכיתה הזו.</p>
+            <form id="add-note-form">
+                <div class="form-group"><label>כותרת</label><input type="text" id="new-note-title" placeholder="לדוגמה: השתתפות מצוינת" required></div>
+                <div class="form-group"><label>תוכן ההערה</label><textarea id="new-note-body" rows="3" placeholder="שלום להורים של {שם}, רוצים לעדכן ש..." required></textarea></div>
+                <button type="submit" class="utility-btn">הוסף הערה לרשימה</button>
+            </form>
+            <ul id="notes-list" class="admin-list"></ul>
+        </div>
+        <div class="manage-section">
+            <h2>חנות כיתתית</h2>
+            <form id="add-store-item-form">
+                <div class="form-group"><label>שם הפריט</label><input type="text" id="item-name" required></div>
+                <div class="form-group"><label>מחיר בנקודות</label><input type="number" id="item-price" min="1" required></div>
+                <div class="form-group"><label>תמונה (אופציונלי)</label><input type="file" id="item-image" accept="image/*"></div>
+                <button type="submit" class="utility-btn">הוסף פריט</button>
+            </form>
+            <ul id="store-manage-list" class="admin-list"></ul>
+        </div>
+    </div>
+
+    <div id="generic-modal-container"></div>
+
+    <script>
+    const SESSION_KEY = 'hakoachClassSession';
+    const isCompactQuery = new URLSearchParams(location.search).get('mode') === 'compact';
+
+    let newWorker;
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const openModal = document.querySelector('.modal.show');
+            if (openModal) openModal.classList.remove('show');
+        }
+    });
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js').then(reg => {
+                reg.addEventListener('updatefound', () => {
+                    newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            document.getElementById('update-notification').classList.add('show');
+                        }
+                    });
+                });
+            });
+        });
+        let refreshing;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            window.location.reload();
+            refreshing = true;
+        });
+    }
+    document.getElementById('reload-btn').onclick = () => { if (newWorker) newWorker.postMessage({ action: 'skipWaiting' }); };
+
+    let deferredPrompt;
+    const installBtn = document.getElementById('install-app-btn');
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (isStandalone && installBtn) installBtn.style.display = 'none';
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
+    if (installBtn) {
+        installBtn.onclick = async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            } else if (isIOS) {
+                alert('באייפון: לחצו על שיתוף ואז "הוסף למסך הבית".');
+            } else {
+                alert('בדפדפן Chrome או Edge לחצו על סמל ההתקנה בשורת הכתובת.');
+            }
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqIPeAR4Icp5waE4G-jQioCYIJhAV8QEM",
+            authDomain: "nikudyotam.firebaseapp.com",
+            projectId: "nikudyotam",
+            storageBucket: "nikudyotam.firebasestorage.app",
+            messagingSenderId: "710116840774",
+            appId: "1:710116840774:web:b7177f123d2fa970bf4147"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const dbRef = db.collection('schoolData').doc('singleClass');
+
+        let appData = {};
+        let currentUser = null;
+        let compactMode = isCompactQuery;
+        let mobileDayIndex = -1;
+        let outstandingContext = { week: null, cellId: null };
+        let wheelNames = [];
+        let wheelSpinning = false;
+
+        const days = ['שיעור', 'ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
+        const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
+        const defaultSchedule = { 1: { lessons: 8 }, 2: { lessons: 8 }, 3: { lessons: 6 }, 4: { lessons: 8 }, 5: { lessons: 8 }, 6: { lessons: 4 } };
+        const MAX_WEEK = 52;
+
+        const debounce = (fn, delay) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), delay); }; };
+        const uid = () => String(Date.now()) + Math.random().toString(16).slice(2);
+        const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+        const getSchoolYearStart = () => {
+            const now = new Date();
+            const getSundayBefore = (year) => {
+                const sept1 = new Date(year, 8, 1);
+                const s = new Date(sept1);
+                s.setDate(sept1.getDate() - sept1.getDay());
+                return s;
+            };
+            const y = now.getFullYear();
+            const thisYearStart = getSundayBefore(y);
+            return now >= thisYearStart ? thisYearStart : getSundayBefore(y - 1);
+        };
+        const SCHOOL_YEAR_START = getSchoolYearStart();
+        const getSystemStatus = () => {
+            const now = new Date();
+            const diffDays = Math.floor((now - SCHOOL_YEAR_START) / 86400000);
+            if (diffDays < 0) return { week: 1, dayIndex: now.getDay() };
+            return { week: Math.min(Math.floor(diffDays / 7) + 1, MAX_WEEK), dayIndex: now.getDay() };
+        };
+        const getColDate = (weekNum, colIndex) => {
+            const d = new Date(SCHOOL_YEAR_START);
+            d.setDate(SCHOOL_YEAR_START.getDate() + (weekNum - 1) * 7 + colIndex);
+            return d;
+        };
+        const toHebrewLetters = (num) => {
+            const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+            const tens = ['', 'י', 'כ', 'ל'];
+            let n = parseInt(num);
+            if (n === 15) return 'ט"ו';
+            if (n === 16) return 'ט"ז';
+            let result = '';
+            if (n >= 10) { result += tens[Math.floor(n / 10)]; n = n % 10; }
+            if (n > 0) result += ones[n];
+            if (result.length > 1) result = result.slice(0, -1) + '"' + result.slice(-1);
+            else result += "'";
+            return result;
+        };
+        const toHebrewDate = (date) => {
+            try {
+                const heDayNum = parseInt(new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { day: 'numeric' }).format(date));
+                return {
+                    day: toHebrewLetters(heDayNum),
+                    month: new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { month: 'long' }).format(date)
+                };
+            } catch { return null; }
+        };
+        const getWeekDateRange = (weekNum) => {
+            const start = getColDate(weekNum, 0);
+            const end = getColDate(weekNum, 5);
+            const f = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`;
+            return `${f(start)} – ${f(end)}`;
+        };
+        const getWeekHebrewRange = (weekNum) => {
+            const startHeb = toHebrewDate(getColDate(weekNum, 0));
+            const endHeb = toHebrewDate(getColDate(weekNum, 5));
+            if (!startHeb || !endHeb) return '';
+            if (startHeb.month === endHeb.month) return `${startHeb.day}–${endHeb.day} ${endHeb.month}`;
+            return `${startHeb.day} ${startHeb.month} – ${endHeb.day} ${endHeb.month}`;
+        };
+
+        let savingCount = 0;
+        const showSaving = () => {
+            savingCount++;
+            let ind = document.getElementById('saving-indicator');
+            if (!ind) {
+                ind = document.createElement('div');
+                ind.id = 'saving-indicator';
+                ind.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#1976D2;color:white;padding:6px 18px;border-radius:20px;font-size:0.9em;font-weight:600;z-index:9999;';
+                document.body.appendChild(ind);
+            }
+            ind.textContent = 'שומר...';
+            ind.style.opacity = '1';
+        };
+        const hideSaving = () => {
+            savingCount = Math.max(0, savingCount - 1);
+            if (savingCount === 0) {
+                const ind = document.getElementById('saving-indicator');
+                if (ind) { ind.textContent = 'נשמר'; setTimeout(() => { ind.style.opacity = '0'; }, 900); }
+            }
+        };
+        const showToast = (msg, ok = false) => {
+            const t = document.createElement('div');
+            t.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:${ok ? '#2e7d32' : '#d32f2f'};color:white;padding:12px 20px;border-radius:10px;z-index:9999;max-width:90vw;text-align:center;font-weight:700;`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        };
+
+        const createDefaultData = () => ({
+            setupComplete: false,
+            className: '',
+            teachers: [],
+            students: [],
+            noteTemplates: [],
+            weeks: {},
+            lessonNames: {},
+            currentWeek: 1,
+            classStoreItems: [],
+            classPointAdjustments: [],
+            outstanding: []
+        });
+        const normalize = (data) => {
+            const d = data || {};
+            if (!Array.isArray(d.teachers)) d.teachers = [];
+            if (!Array.isArray(d.students)) d.students = [];
+            if (!Array.isArray(d.noteTemplates)) d.noteTemplates = [];
+            if (!d.weeks) d.weeks = {};
+            if (!d.lessonNames) d.lessonNames = {};
+            if (!Array.isArray(d.classStoreItems)) d.classStoreItems = [];
+            if (!Array.isArray(d.classPointAdjustments)) d.classPointAdjustments = [];
+            if (!Array.isArray(d.outstanding)) d.outstanding = [];
+            if (!d.currentWeek) d.currentWeek = getSystemStatus().week;
+            return d;
+        };
+
+        const updateDB = async (path, value) => {
+            showSaving();
+            try { await dbRef.update({ [path]: value }); }
+            catch (e) { console.error(e); showToast('שגיאה בשמירה. בדקו חיבור לאינטרנט.'); }
+            finally { hideSaving(); }
+        };
+        const saveFull = async () => {
+            showSaving();
+            try { await dbRef.set(appData); }
+            catch (e) { console.error(e); showToast('שגיאה בשמירת נתונים.'); }
+            finally { hideSaving(); }
+        };
+        const debouncedUpdate = debounce((path, value) => updateDB(path, value), 700);
+
+        const calculateClassPoints = () => {
+            const earned = Object.values(appData.weeks || {}).flatMap(w => Object.values(w))
+                .reduce((sum, cell) => sum + (Number(cell.score) > 0 ? Number(cell.score) : 0), 0);
+            const adj = (appData.classPointAdjustments || []).reduce((sum, a) => sum + Number(a.amount || 0), 0);
+            return earned + adj;
+        };
+
+        const views = ['login-page', 'setup-page', 'main-app', 'manage-panel'];
+        const showView = (id) => views.forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
+        const openModal = (id) => document.getElementById(id)?.classList.add('show');
+        const closeModal = (el) => {
+            const m = typeof el === 'string' ? document.getElementById(el) : el?.closest?.('.modal');
+            m?.classList.remove('show');
+        };
+        const isHomeroom = () => currentUser?.role === 'homeroom';
+
+        document.getElementById('generic-modal-container').innerHTML = `
+            <div class="modal" id="store-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>חנות כיתתית</h2><p id="store-header"></p><div id="store-items"></div></div></div>
+            <div class="modal" id="history-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>היסטוריית רכישות</h2><div id="purchase-history-list"></div></div></div>
+            <div class="modal" id="student-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2 id="student-modal-name"></h2><div id="student-modal-body"></div></div></div>
+            <div class="modal" id="outstanding-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>מצטייני שיעור</h2>
+                <div class="form-group"><label>שיעור</label><select id="outstanding-lesson-select"></select></div>
+                <p>בחרו תלמידים מצטיינים בשיעור זה (בלי נקודות אישיות):</p>
+                <div id="student-chip-list"></div>
+                <button type="button" id="save-outstanding-btn" class="modal-btn" style="margin-top:16px;background:var(--success-color);">שמור מצטיינים</button>
+            </div></div>
+            <div class="modal" id="wheel-modal"><div class="modal-content" style="max-width:520px;"><span class="close-btn">&times;</span><h2>גלגל המזל</h2>
+                <div class="form-group"><label>ממי להגריל</label>
+                    <select id="wheel-source">
+                        <option value="lesson">מצטייני השיעור שנבחר</option>
+                        <option value="today">כל מצטייני היום</option>
+                        <option value="all">כל תלמידי הכיתה</option>
+                    </select>
+                </div>
+                <div class="form-group" id="wheel-lesson-wrap"><label>שיעור להגרלה</label><select id="wheel-lesson-select"></select></div>
+                <div class="wheel-wrap">
+                    <div class="wheel-pointer"></div>
+                    <canvas id="wheel-canvas" width="360" height="360"></canvas>
+                    <div id="wheel-winner"></div>
+                    <button type="button" id="spin-wheel-btn" class="modal-btn" style="background:#f9a825;color:#333;">סובב את הגלגל</button>
+                </div>
+            </div></div>
+            <div class="modal" id="note-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>הערה להורים</h2>
+                <div class="form-group"><label>תלמיד/ה</label><select id="note-student-select"></select></div>
+                <div class="form-group"><label>הערה מהרשימה הכיתתית</label><select id="note-template-select"></select></div>
+                <div class="form-group"><label>תוכן (ניתן לערוך לפני השליחה)</label><textarea id="note-body" rows="6"></textarea></div>
+                <button type="button" id="send-note-btn" class="modal-btn" style="background:#25D366;">שלח בוואטסאפ</button>
+            </div></div>
+        `;
+        document.querySelectorAll('.modal').forEach(m => {
+            m.addEventListener('click', e => { if (e.target === m) closeModal(m); });
+            m.querySelectorAll('.close-btn').forEach(btn => btn.onclick = () => closeModal(m));
+        });
+
+        const applyCompact = (on) => {
+            compactMode = on;
+            document.body.classList.toggle('compact-ui', on);
+            document.getElementById('compact-bar').style.display = on ? 'flex' : 'none';
+            if (on) {
+                mobileDayIndex = -1;
+                renderAll();
+            }
+        };
+        const openCompactPopup = () => {
+            const url = new URL(location.href);
+            url.searchParams.set('mode', 'compact');
+            const popup = window.open(url.toString(), 'lesson-overlay', 'popup=yes,width=300,height=760,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes');
+            if (!popup) {
+                applyCompact(true);
+                showToast('החלונית נחסמה. עברנו למצב מצומצם באותו חלון.', true);
+            }
+        };
+
+        const getMobileDayIndex = () => {
+            if (mobileDayIndex >= 0) return mobileDayIndex;
+            const { dayIndex } = getSystemStatus();
+            return Math.min(Math.max(dayIndex, 0), 5);
+        };
+        const lessonOptionsForDay = (week, dayIdx) => {
+            const schedule = defaultSchedule[dayIdx + 1] || { lessons: 8 };
+            const opts = [];
+            for (let lesson = 1; lesson <= schedule.lessons; lesson++) {
+                const cellId = `${lesson}-${dayIdx}`;
+                const label = lesson === 1 ? 'תפילה' : `שיעור ${lesson}`;
+                const name = appData.lessonNames?.[cellId] || (lesson === 1 ? 'תפילה' : '');
+                opts.push({ cellId, week, label: name ? `${label} — ${name}` : label });
+            }
+            return opts;
+        };
+        const starsForCell = (week, cellId) => (appData.weeks?.[week]?.[cellId]?.stars) || [];
+
+        const updateWeekDisplay = (weekNum) => {
+            document.getElementById('week-dates-text').textContent = getWeekDateRange(weekNum);
+            document.getElementById('week-hebrew-text').textContent = getWeekHebrewRange(weekNum);
+        };
+
+        const renderTable = () => {
+            const sys = getSystemStatus();
+            const week = appData.currentWeek;
+            let headers = '';
+            for (let i = 0; i < days.length; i++) {
+                const isToday = (i > 0) && (week === sys.week) && ((i - 1) === sys.dayIndex);
+                let dayLabel = days[i];
+                if (i > 0) {
+                    const he = toHebrewDate(getColDate(week, i - 1));
+                    if (he) dayLabel += `<br><span style="font-size:0.72em;font-weight:500;opacity:0.85;">${he.day} ${he.month}</span>`;
+                }
+                headers += `<th class="${isToday ? 'highlight-today' : ''}">${dayLabel}</th>`;
+            }
+            document.getElementById('table-header').innerHTML = headers;
+            const weekData = appData.weeks[week] || {};
+            const maxLessons = Math.max(...Object.values(defaultSchedule).map(d => d.lessons));
+            let rows = '';
+            for (let i = 1; i <= maxLessons; i++) {
+                const label = i === 1 ? 'תפילה' : `שיעור ${i}`;
+                rows += `<tr><td>${label}</td>`;
+                rows += days.slice(1).map((_, col) => {
+                    const dayIndex = col + 1;
+                    const isToday = (week === sys.week) && (col === sys.dayIndex);
+                    const hl = isToday ? 'highlight-today' : '';
+                    if (i > (defaultSchedule[dayIndex]?.lessons || 0)) return `<td class="${hl}"></td>`;
+                    const cellId = `${i}-${col}`;
+                    const cell = weekData[cellId] || { score: -1 };
+                    const scoreClass = cell.score > -1 ? `score-${cell.score}` : '';
+                    const isTefila = i === 1;
+                    const lessonName = appData.lessonNames[cellId] || (isTefila ? 'תפילה' : '');
+                    const starCount = (cell.stars || []).length;
+                    return `<td class="${hl}"><div class="cell-content ${scoreClass}" data-cell-id="${cellId}">
+                        <input type="text" class="lesson-name-input" value="${escapeHtml(lessonName)}" data-id="${cellId}" ${isTefila ? 'readonly' : ''} placeholder="שם שיעור">
+                        <select class="point-select" data-id="${cellId}">
+                            <option value="-1" ${cell.score == -1 ? 'selected' : ''}>-</option>
+                            <option value="0" ${cell.score == 0 ? 'selected' : ''}>0</option>
+                            <option value="1" ${cell.score == 1 ? 'selected' : ''}>1</option>
+                            <option value="2" ${cell.score == 2 ? 'selected' : ''}>2</option>
+                            <option value="3" ${cell.score == 3 ? 'selected' : ''}>3</option>
+                        </select>
+                        <button type="button" class="star-lesson-btn ${starCount ? 'has-stars' : ''}" data-cell-id="${cellId}" title="מצטיינים בשיעור">⭐${starCount ? starCount : ''}</button>
+                    </div></td>`;
+                }).join('');
+                rows += `</tr>`;
+            }
+            document.getElementById('table-body').innerHTML = rows;
+        };
+
+        const renderMobileDayView = () => {
+            const sys = getSystemStatus();
+            const dayIdx = getMobileDayIndex();
+            const week = appData.currentWeek;
+            const dayDate = getColDate(week, dayIdx);
+            const he = toHebrewDate(dayDate);
+            document.getElementById('mobile-day-title').textContent = dayNames[dayIdx];
+            document.getElementById('compact-day-label').textContent = `${dayNames[dayIdx]}${he ? ' · ' + he.day + ' ' + he.month : ''}`;
+            if (compactMode) {
+                document.getElementById('week-hebrew-text').textContent = he ? `${he.day} ${he.month}` : '';
+                document.getElementById('week-dates-text').textContent = `${String(dayDate.getDate()).padStart(2,'0')}.${String(dayDate.getMonth()+1).padStart(2,'0')}`;
+            }
+            document.getElementById('mobile-prev-day').disabled = dayIdx <= 0;
+            document.getElementById('mobile-next-day').disabled = dayIdx >= 5;
+            const weekData = appData.weeks[week] || {};
+            const schedule = defaultSchedule[dayIdx + 1] || { lessons: 8 };
+            const isToday = (week === sys.week) && (dayIdx === Math.min(Math.max(sys.dayIndex, 0), 5));
+            let html = '';
+            for (let lesson = 1; lesson <= schedule.lessons; lesson++) {
+                const cellId = `${lesson}-${dayIdx}`;
+                const cell = weekData[cellId] || { score: -1 };
+                const score = cell.score;
+                const isTefila = lesson === 1;
+                const lessonName = appData.lessonNames[cellId] || (isTefila ? 'תפילה' : '');
+                const starCount = (cell.stars || []).length;
+                html += `<div class="mobile-lesson-card ${score > -1 ? 'score-'+score : ''} ${isToday ? 'today-card' : ''}">
+                    <div class="mobile-lesson-row">
+                        <span class="mobile-lesson-label">${isTefila ? 'תפילה' : 'שיעור ' + lesson}</span>
+                        <input type="text" class="mobile-lesson-name-input" value="${escapeHtml(lessonName)}" data-cell-id="${cellId}" ${isTefila ? 'readonly' : ''} placeholder="שם שיעור">
+                        <select class="mobile-point-select ${score > -1 ? 'has-score-'+score : ''}" data-cell-id="${cellId}">
+                            <option value="-1" ${score == -1 ? 'selected' : ''}>—</option>
+                            <option value="0" ${score == 0 ? 'selected' : ''}>0</option>
+                            <option value="1" ${score == 1 ? 'selected' : ''}>1</option>
+                            <option value="2" ${score == 2 ? 'selected' : ''}>2</option>
+                            <option value="3" ${score == 3 ? 'selected' : ''}>3</option>
+                        </select>
+                        <button type="button" class="star-lesson-btn ${starCount ? 'has-stars' : ''}" data-cell-id="${cellId}">⭐${starCount ? starCount : ''}</button>
+                    </div>
+                </div>`;
+            }
+            document.getElementById('mobile-lessons-container').innerHTML = html;
+        };
+
+        const renderAll = () => {
+            if (!currentUser) return;
+            document.getElementById('main-title').textContent = appData.className || 'הכיתה';
+            document.getElementById('logged-teacher-label').textContent = currentUser.name + (isHomeroom() ? ' · מחנך/ת' : ' · מורה');
+            document.getElementById('total-points-display').textContent = calculateClassPoints();
+            document.getElementById('prev-week-btn').disabled = appData.currentWeek <= 1;
+            document.getElementById('next-week-btn').disabled = appData.currentWeek >= MAX_WEEK;
+            document.querySelectorAll('.homeroom-only').forEach(el => el.classList.toggle('hidden', !isHomeroom()));
+            updateWeekDisplay(appData.currentWeek);
+            renderTable();
+            renderMobileDayView();
+        };
+
+        const fillLessonSelect = (selectEl, preferredCellId) => {
+            const week = appData.currentWeek;
+            const dayIdx = getMobileDayIndex();
+            const opts = lessonOptionsForDay(week, dayIdx);
+            selectEl.innerHTML = opts.map(o => `<option value="${o.cellId}" ${o.cellId === preferredCellId ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('');
+        };
+
+        const openOutstandingModal = (cellId) => {
+            outstandingContext = { week: appData.currentWeek, cellId: cellId || null };
+            fillLessonSelect(document.getElementById('outstanding-lesson-select'), cellId);
+            if (!outstandingContext.cellId) outstandingContext.cellId = document.getElementById('outstanding-lesson-select').value;
+            const selected = new Set(starsForCell(outstandingContext.week, outstandingContext.cellId));
+            const students = [...(appData.students || [])].sort((a,b) => a.name.localeCompare(b.name, 'he'));
+            document.getElementById('student-chip-list').innerHTML = students.map(s =>
+                `<button type="button" class="student-chip ${selected.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
+            ).join('') || '<p>אין תלמידים עדיין. הוסיפו תלמידים בניהול הכיתה.</p>';
+            openModal('outstanding-modal');
+        };
+
+        const secureRandom = () => {
+            const buf = new Uint32Array(1);
+            crypto.getRandomValues(buf);
+            return buf[0] / 4294967296;
+        };
+
+        const drawWheel = (names, rotation = 0, highlight = -1) => {
+            const canvas = document.getElementById('wheel-canvas');
+            const ctx = canvas.getContext('2d');
+            const size = canvas.width;
+            const cx = size / 2, cy = size / 2, r = size / 2 - 8;
+            ctx.clearRect(0, 0, size, size);
+            if (!names.length) {
+                ctx.fillStyle = '#999';
+                ctx.font = '20px Assistant';
+                ctx.textAlign = 'center';
+                ctx.fillText('אין תלמידים להגרלה', cx, cy);
+                return;
+            }
+            const pal = ['#1976D2','#009688','#f9a825','#7b1fa2','#d32f2f','#388e3c','#0288d1','#ef6c00'];
+            const arc = (Math.PI * 2) / names.length;
+            names.forEach((name, i) => {
+                const start = rotation + i * arc - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, r, start, start + arc);
+                ctx.closePath();
+                ctx.fillStyle = pal[i % pal.length];
+                if (i === highlight) ctx.fillStyle = '#ffd54f';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(start + arc / 2);
+                ctx.fillStyle = '#fff';
+                ctx.font = `bold ${Math.min(18, 220 / names.length)}px Assistant`;
+                ctx.textAlign = 'right';
+                ctx.fillText(name.split(' ')[0], r - 14, 6);
+                ctx.restore();
+            });
+            ctx.beginPath();
+            ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.strokeStyle = '#1976D2';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+        };
+
+        const namesForWheel = () => {
+            const source = document.getElementById('wheel-source').value;
+            const students = appData.students || [];
+            const byId = id => students.find(s => s.id === id)?.name;
+            if (source === 'all') return students.map(s => s.name).filter(Boolean);
+            if (source === 'today') {
+                const week = appData.currentWeek;
+                const dayIdx = getMobileDayIndex();
+                const ids = new Set();
+                Object.entries(appData.weeks?.[week] || {}).forEach(([cellId, cell]) => {
+                    if (cellId.endsWith('-' + dayIdx)) (cell.stars || []).forEach(id => ids.add(id));
+                });
+                return [...ids].map(byId).filter(Boolean);
+            }
+            const cellId = document.getElementById('wheel-lesson-select').value;
+            return starsForCell(appData.currentWeek, cellId).map(byId).filter(Boolean);
+        };
+
+        const openWheelModal = () => {
+            fillLessonSelect(document.getElementById('wheel-lesson-select'));
+            document.getElementById('wheel-winner').textContent = '';
+            wheelNames = namesForWheel();
+            drawWheel(wheelNames);
+            openModal('wheel-modal');
+        };
+
+        const spinWheel = () => {
+            if (wheelSpinning) return;
+            wheelNames = namesForWheel();
+            if (wheelNames.length < 2) {
+                showToast('צריך לפחות שני תלמידים להגרלה אקראית.');
+                return;
+            }
+            wheelSpinning = true;
+            document.getElementById('spin-wheel-btn').disabled = true;
+            document.getElementById('wheel-winner').textContent = '';
+            const winnerIndex = Math.floor(secureRandom() * wheelNames.length);
+            const arc = 360 / wheelNames.length;
+            const extraTurns = 6 + Math.floor(secureRandom() * 4);
+            const jitter = (secureRandom() - 0.5) * (arc * 0.7);
+            const targetDeg = extraTurns * 360 + (360 - (winnerIndex * arc + arc / 2)) + jitter;
+            const start = performance.now();
+            const duration = 4200 + secureRandom() * 800;
+            const animate = (now) => {
+                const t = Math.min(1, (now - start) / duration);
+                const eased = 1 - Math.pow(1 - t, 3);
+                const deg = targetDeg * eased;
+                drawWheel(wheelNames, deg * Math.PI / 180);
+                if (t < 1) requestAnimationFrame(animate);
+                else {
+                    drawWheel(wheelNames, targetDeg * Math.PI / 180, winnerIndex);
+                    document.getElementById('wheel-winner').textContent = 'הזוכה: ' + wheelNames[winnerIndex];
+                    wheelSpinning = false;
+                    document.getElementById('spin-wheel-btn').disabled = false;
+                }
+            };
+            requestAnimationFrame(animate);
+        };
+
+        const openNoteModal = () => {
+            const students = [...(appData.students || [])].sort((a,b) => a.name.localeCompare(b.name, 'he'));
+            const templates = appData.noteTemplates || [];
+            document.getElementById('note-student-select').innerHTML = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('') || '<option value="">אין תלמידים</option>';
+            document.getElementById('note-template-select').innerHTML = '<option value="">בחרו הערה מהרשימה</option>' + templates.map(t => `<option value="${t.id}">${escapeHtml(t.title)}</option>`).join('');
+            document.getElementById('note-body').value = '';
+            if (!templates.length) showToast('אין עדיין רשימת הערות. המחנך מוסיף אותה בניהול הכיתה.');
+            openModal('note-modal');
+        };
+
+        const applyNoteTemplate = () => {
+            const sid = document.getElementById('note-student-select').value;
+            const tid = document.getElementById('note-template-select').value;
+            const student = (appData.students || []).find(s => s.id === sid);
+            const tpl = (appData.noteTemplates || []).find(t => t.id === tid);
+            if (!tpl || !student) return;
+            const first = student.name.split(' ')[0];
+            document.getElementById('note-body').value = tpl.body
+                .replaceAll('{שם}', first)
+                .replaceAll('{שם מלא}', student.name)
+                .replaceAll('{מורה}', currentUser.name);
+        };
+
+        const sendWhatsApp = () => {
+            const sid = document.getElementById('note-student-select').value;
+            const student = (appData.students || []).find(s => s.id === sid);
+            const body = document.getElementById('note-body').value.trim();
+            if (!student) return showToast('בחרו תלמיד.');
+            if (!body) return showToast('כתבו או בחרו הערה.');
+            const phone = (student.parentPhone || '').replace(/\D/g, '');
+            if (phone.length < 9) {
+                showToast('אין מספר הורים לתלמיד זה. עדכנו בניהול הכיתה.');
+                return;
+            }
+            let clean = phone.startsWith('0') ? phone.slice(1) : phone;
+            if (clean.startsWith('972')) clean = clean;
+            else clean = '972' + clean;
+            window.open(`https://wa.me/${clean}?text=${encodeURIComponent(body)}`, '_blank');
+        };
+
+        const openStore = () => {
+            const pts = calculateClassPoints();
+            document.getElementById('store-header').textContent = 'נקודות זמינות: ' + pts;
+            const items = appData.classStoreItems || [];
+            document.getElementById('store-items').innerHTML = items.map(i => `
+                <div class="product-card">
+                    <div class="product-image-container">${i.imageSrc ? `<img src="${i.imageSrc}" alt="">` : '🛍️'}</div>
+                    <div class="product-info">
+                        <h3 style="margin:0 0 10px;">${escapeHtml(i.name)}</h3>
+                        <div class="product-purchase-area">
+                            <span class="product-price">${i.price} נק'</span>
+                            <button class="utility-btn buy-item-btn" data-id="${i.id}" ${pts < Number(i.price) ? 'disabled' : ''}>קנייה</button>
+                        </div>
+                    </div>
+                </div>`).join('') || '<p>אין פריטים בחנות. המחנך מוסיף אותם בניהול הכיתה.</p>';
+            openModal('store-modal');
+        };
+
+        const buyItem = async (itemId) => {
+            try {
+                await db.runTransaction(async (t) => {
+                    const snap = await t.get(dbRef);
+                    if (!snap.exists) throw 'NoDoc';
+                    const data = snap.data();
+                    const item = (data.classStoreItems || []).find(i => i.id === itemId);
+                    if (!item) throw 'NoItem';
+                    const earned = Object.values(data.weeks || {}).flatMap(w => Object.values(w))
+                        .reduce((sum, cell) => sum + (Number(cell.score) > 0 ? Number(cell.score) : 0), 0);
+                    const adj = (data.classPointAdjustments || []).reduce((s, a) => s + Number(a.amount || 0), 0);
+                    if (earned + adj < Number(item.price)) throw 'NoPoints';
+                    const list = data.classPointAdjustments || [];
+                    list.push({ id: uid(), amount: -Number(item.price), reason: 'רכישה: ' + item.name, date: new Date().toISOString() });
+                    t.update(dbRef, { classPointAdjustments: list });
+                    appData.classPointAdjustments = list;
+                });
+                closeModal('store-modal');
+                renderAll();
+                showToast('הקנייה בוצעה!', true);
+            } catch (e) {
+                if (e === 'NoPoints') showToast('אין מספיק נקודות כיתתיות.');
+                else showToast('שגיאה ברכישה.');
+            }
+        };
+
+        const renderManage = () => {
+            const students = [...(appData.students || [])].sort((a,b) => a.name.localeCompare(b.name, 'he'));
+            document.getElementById('student-grid').innerHTML = students.map(s => `
+                <div class="student-tile" data-id="${s.id}">
+                    <div class="student-tile-name">${escapeHtml(s.name)}</div>
+                    <div class="student-tile-meta">${s.parentPhone ? 'יש טלפון הורים' : 'אין טלפון הורים'}</div>
+                </div>`).join('') || '<p>אין תלמידים עדיין.</p>';
+            document.getElementById('teachers-list').innerHTML = (appData.teachers || []).map(t => `
+                <li class="admin-list-item">
+                    <span>${escapeHtml(t.name)} ${t.role === 'homeroom' ? '(מחנך/ת)' : '(מורה)'}</span>
+                    ${t.role === 'homeroom' ? '' : `<button class="utility-btn danger delete-teacher-btn" data-id="${t.id}">מחק</button>`}
+                </li>`).join('');
+            document.getElementById('notes-list').innerHTML = (appData.noteTemplates || []).map(n => `
+                <li class="admin-list-item">
+                    <span><b>${escapeHtml(n.title)}</b><br><small>${escapeHtml(n.body)}</small></span>
+                    <button class="utility-btn danger delete-note-btn" data-id="${n.id}">מחק</button>
+                </li>`).join('') || '<p>אין הערות ברשימה.</p>';
+            document.getElementById('store-manage-list').innerHTML = (appData.classStoreItems || []).map(i => `
+                <li class="admin-list-item">
+                    <span>${escapeHtml(i.name)} (${i.price} נק')</span>
+                    <button class="utility-btn danger delete-item-btn" data-id="${i.id}">מחק</button>
+                </li>`).join('') || '<p>אין פריטים.</p>';
+        };
+
+        const openStudentEditor = (id) => {
+            const s = (appData.students || []).find(x => x.id === id);
+            if (!s) return;
+            document.getElementById('student-modal-name').textContent = s.name;
+            document.getElementById('student-modal-body').innerHTML = `
+                <div class="form-group"><label>טלפון הורים</label><input type="tel" id="edit-phone" value="${escapeHtml(s.parentPhone || '')}" placeholder="0500000000"></div>
+                <button type="button" class="modal-btn" id="save-student-btn" data-id="${s.id}">שמור</button>
+                ${isHomeroom() ? `<button type="button" class="modal-btn" id="delete-student-btn" data-id="${s.id}" style="background:var(--danger-color);margin-top:8px;">מחק תלמיד</button>` : ''}
+            `;
+            openModal('student-modal');
+        };
+
+        const persistSession = () => localStorage.setItem(SESSION_KEY, JSON.stringify({ id: currentUser.id, name: currentUser.name, role: currentUser.role }));
+        const clearSession = () => localStorage.removeItem(SESSION_KEY);
+
+        const enterApp = (teacher) => {
+            currentUser = teacher;
+            persistSession();
+            const sys = getSystemStatus();
+            if (!appData.currentWeek) appData.currentWeek = sys.week;
+            showView('main-app');
+            applyCompact(compactMode);
+            renderAll();
+        };
+
+        const logout = () => {
+            currentUser = null;
+            clearSession();
+            compactMode = false;
+            document.body.classList.remove('compact-ui');
+            showView('login-page');
+            document.getElementById('setup-hint').classList.toggle('hidden', !!appData.setupComplete);
+        };
+
+        const loadApp = async () => {
+            try {
+                const doc = await dbRef.get();
+                if (doc.exists) appData = normalize(doc.data());
+                else {
+                    appData = createDefaultData();
+                    await saveFull();
+                }
+                dbRef.onSnapshot((snap) => {
+                    if (snap.metadata.hasPendingWrites || !snap.exists) return;
+                    const savedWeek = appData.currentWeek;
+                    appData = normalize(snap.data());
+                    if (savedWeek) appData.currentWeek = savedWeek;
+                    if (currentUser && !document.getElementById('main-app').classList.contains('hidden')) renderAll();
+                    if (!document.getElementById('manage-panel').classList.contains('hidden')) renderManage();
+                });
+                document.getElementById('setup-hint').classList.toggle('hidden', !!appData.setupComplete);
+                const session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+                if (session) {
+                    const teacher = (appData.teachers || []).find(t => t.id === session.id);
+                    if (teacher) return enterApp(teacher);
+                }
+                showView('login-page');
+            } catch (e) {
+                console.error(e);
+                showToast('שגיאה בטעינת נתונים.');
+            }
+        };
+
+        document.getElementById('open-setup-link').onclick = (e) => { e.preventDefault(); showView('setup-page'); };
+        document.getElementById('back-to-login-link').onclick = (e) => { e.preventDefault(); showView('login-page'); };
+
+        document.getElementById('setup-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if (appData.setupComplete) return showToast('הכיתה כבר הוגדרה.');
+            const className = document.getElementById('setup-class-name').value.trim();
+            const name = document.getElementById('setup-teacher-name').value.trim();
+            const pass = document.getElementById('setup-teacher-pass').value;
+            const students = document.getElementById('setup-students').value.split('\n').map(n => n.trim()).filter(Boolean)
+                .map(n => ({ id: uid(), name: n, parentPhone: '' }));
+            appData = normalize({
+                ...createDefaultData(),
+                setupComplete: true,
+                className,
+                teachers: [{ id: uid(), name, password: pass, role: 'homeroom' }],
+                students,
+                currentWeek: getSystemStatus().week
+            });
+            await saveFull();
+            enterApp(appData.teachers[0]);
+        };
+
+        document.getElementById('login-form').onsubmit = (e) => {
+            e.preventDefault();
+            if (!appData.setupComplete) {
+                document.getElementById('setup-hint').classList.remove('hidden');
+                return showToast('צריך להקים כיתה חדשה לפני הכניסה.');
+            }
+            const name = document.getElementById('login-name').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            const teacher = (appData.teachers || []).find(t => t.password === pass && (!name || t.name === name || t.name.includes(name) || name.includes(t.name)));
+            const byPass = (appData.teachers || []).find(t => t.password === pass);
+            const found = teacher || byPass;
+            if (!found) return showToast('שם או סיסמה שגויים.');
+            e.target.reset();
+            enterApp(found);
+        };
+
+        document.getElementById('logout-btn').onclick = logout;
+        document.getElementById('open-manage-btn').onclick = () => { if (!isHomeroom()) return; renderManage(); showView('manage-panel'); };
+        document.getElementById('close-manage-btn').onclick = () => { showView('main-app'); renderAll(); };
+        document.getElementById('compact-mode-btn').onclick = () => {
+            if (window.matchMedia('(display-mode: standalone)').matches || window.outerWidth < 500) applyCompact(true);
+            else openCompactPopup();
+        };
+        document.getElementById('exit-compact-btn').onclick = () => {
+            if (isCompactQuery) { location.href = './index.html'; return; }
+            applyCompact(false);
+            renderAll();
+        };
+
+        document.getElementById('next-week-btn').onclick = () => {
+            if (appData.currentWeek >= MAX_WEEK) return;
+            appData.currentWeek++;
+            mobileDayIndex = 0;
+            renderAll();
+        };
+        document.getElementById('prev-week-btn').onclick = () => {
+            if (appData.currentWeek <= 1) return;
+            appData.currentWeek--;
+            mobileDayIndex = 0;
+            renderAll();
+        };
+        document.getElementById('mobile-prev-day').onclick = () => {
+            const cur = getMobileDayIndex();
+            if (cur > 0) { mobileDayIndex = cur - 1; renderMobileDayView(); }
+        };
+        document.getElementById('mobile-next-day').onclick = () => {
+            const cur = getMobileDayIndex();
+            if (cur < 5) { mobileDayIndex = cur + 1; renderMobileDayView(); }
+        };
+
+        const saveCellScore = async (cellId, score) => {
+            const week = appData.currentWeek;
+            if (!appData.weeks[week]) appData.weeks[week] = {};
+            if (!appData.weeks[week][cellId]) appData.weeks[week][cellId] = { score: -1, stars: [] };
+            appData.weeks[week][cellId].score = score;
+            await updateDB(`weeks.${week}.${cellId}`, appData.weeks[week][cellId]);
+            renderAll();
+        };
+        const saveLessonName = (cellId, value) => {
+            appData.lessonNames[cellId] = value;
+            debouncedUpdate(`lessonNames.${cellId}`, value);
+        };
+
+        document.getElementById('class-table-wrapper').addEventListener('change', async (e) => {
+            if (e.target.classList.contains('point-select')) await saveCellScore(e.target.dataset.id, parseInt(e.target.value));
+            if (e.target.classList.contains('lesson-name-input') && !e.target.readOnly) saveLessonName(e.target.dataset.id, e.target.value);
+        });
+        document.getElementById('class-table-wrapper').addEventListener('click', (e) => {
+            const btn = e.target.closest('.star-lesson-btn');
+            if (btn) openOutstandingModal(btn.dataset.cellId);
+        });
+        document.getElementById('mobile-lessons-container').addEventListener('change', async (e) => {
+            const cellId = e.target.dataset.cellId;
+            if (!cellId) return;
+            if (e.target.classList.contains('mobile-point-select')) await saveCellScore(cellId, parseInt(e.target.value));
+            if (e.target.classList.contains('mobile-lesson-name-input') && !e.target.readOnly) saveLessonName(cellId, e.target.value);
+        });
+        document.getElementById('mobile-lessons-container').addEventListener('click', (e) => {
+            const btn = e.target.closest('.star-lesson-btn');
+            if (btn) openOutstandingModal(btn.dataset.cellId);
+        });
+
+        document.getElementById('outstanding-btn').onclick = () => openOutstandingModal();
+        document.getElementById('outstanding-lesson-select').onchange = () => openOutstandingModal(document.getElementById('outstanding-lesson-select').value);
+        document.getElementById('student-chip-list').onclick = (e) => {
+            const btn = e.target.closest('.student-chip');
+            if (btn) btn.classList.toggle('selected');
+        };
+        document.getElementById('save-outstanding-btn').onclick = async () => {
+            const cellId = document.getElementById('outstanding-lesson-select').value;
+            const week = appData.currentWeek;
+            const ids = [...document.querySelectorAll('#student-chip-list .student-chip.selected')].map(b => b.dataset.id);
+            if (!appData.weeks[week]) appData.weeks[week] = {};
+            if (!appData.weeks[week][cellId]) appData.weeks[week][cellId] = { score: -1, stars: [] };
+            appData.weeks[week][cellId].stars = ids;
+            const lessonLabel = appData.lessonNames[cellId] || cellId;
+            appData.outstanding = [
+                ...(appData.outstanding || []).filter(o => !(o.week === week && o.cellId === cellId)),
+                ...ids.map(studentId => ({
+                    id: uid(), studentId, week, cellId, lessonName: lessonLabel,
+                    teacherId: currentUser.id, teacherName: currentUser.name, date: new Date().toISOString()
+                }))
+            ].slice(-400);
+            await dbRef.update({
+                [`weeks.${week}.${cellId}`]: appData.weeks[week][cellId],
+                outstanding: appData.outstanding
+            });
+            closeModal('outstanding-modal');
+            renderAll();
+            showToast('המצטיינים נשמרו לשיעור.', true);
+        };
+
+        document.getElementById('wheel-btn').onclick = openWheelModal;
+        document.getElementById('wheel-source').onchange = () => {
+            document.getElementById('wheel-lesson-wrap').style.display = document.getElementById('wheel-source').value === 'lesson' ? '' : 'none';
+            wheelNames = namesForWheel();
+            drawWheel(wheelNames);
+        };
+        document.getElementById('wheel-lesson-select').onchange = () => { wheelNames = namesForWheel(); drawWheel(wheelNames); };
+        document.getElementById('spin-wheel-btn').onclick = spinWheel;
+
+        document.getElementById('parent-note-btn').onclick = openNoteModal;
+        document.getElementById('note-template-select').onchange = applyNoteTemplate;
+        document.getElementById('note-student-select').onchange = applyNoteTemplate;
+        document.getElementById('send-note-btn').onclick = sendWhatsApp;
+
+        document.getElementById('open-class-store-btn').onclick = openStore;
+        document.getElementById('store-items').addEventListener('click', (e) => {
+            const btn = e.target.closest('.buy-item-btn');
+            if (btn) buyItem(btn.dataset.id);
+        });
+        document.getElementById('view-purchase-history-btn').onclick = () => {
+            const rows = (appData.classPointAdjustments || []).filter(a => a.amount < 0 && String(a.reason).startsWith('רכישה:'));
+            document.getElementById('purchase-history-list').innerHTML = rows.map(p =>
+                `<div class="purchase-history-item"><span>${escapeHtml(p.reason.replace('רכישה: ', ''))} (${-p.amount} נק')</span><span>${new Date(p.date).toLocaleDateString('he-IL')}</span></div>`
+            ).join('') || '<p>אין רכישות.</p>';
+            openModal('history-modal');
+        };
+
+        document.getElementById('add-students-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const names = document.getElementById('add-students-textarea').value.split('\n').map(n => n.trim()).filter(Boolean);
+            names.forEach(name => {
+                if (!(appData.students || []).some(s => s.name === name)) appData.students.push({ id: uid(), name, parentPhone: '' });
+            });
+            document.getElementById('add-students-textarea').value = '';
+            await updateDB('students', appData.students);
+            renderManage();
+        };
+        document.getElementById('student-grid').onclick = (e) => {
+            const tile = e.target.closest('.student-tile');
+            if (tile) openStudentEditor(tile.dataset.id);
+        };
+        document.getElementById('student-modal-body').addEventListener('click', async (e) => {
+            if (e.target.id === 'save-student-btn') {
+                const s = appData.students.find(x => x.id === e.target.dataset.id);
+                if (s) { s.parentPhone = document.getElementById('edit-phone').value.trim(); await updateDB('students', appData.students); }
+                closeModal('student-modal');
+                renderManage();
+            }
+            if (e.target.id === 'delete-student-btn' && confirm('למחוק את התלמיד מהרשימה?')) {
+                appData.students = appData.students.filter(s => s.id !== e.target.dataset.id);
+                await updateDB('students', appData.students);
+                closeModal('student-modal');
+                renderManage();
+            }
+        });
+        document.getElementById('add-teacher-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('new-teacher-name').value.trim();
+            const password = document.getElementById('new-teacher-pass').value;
+            if ((appData.teachers || []).some(t => t.password === password)) return showToast('הסיסמה כבר בשימוש. בחרו סיסמה אחרת.');
+            appData.teachers.push({ id: uid(), name, password, role: 'teacher' });
+            e.target.reset();
+            await updateDB('teachers', appData.teachers);
+            renderManage();
+        };
+        document.getElementById('teachers-list').onclick = async (e) => {
+            const btn = e.target.closest('.delete-teacher-btn');
+            if (!btn) return;
+            appData.teachers = appData.teachers.filter(t => t.id !== btn.dataset.id);
+            await updateDB('teachers', appData.teachers);
+            renderManage();
+        };
+        document.getElementById('add-note-form').onsubmit = async (e) => {
+            e.preventDefault();
+            appData.noteTemplates.push({
+                id: uid(),
+                title: document.getElementById('new-note-title').value.trim(),
+                body: document.getElementById('new-note-body').value.trim()
+            });
+            e.target.reset();
+            await updateDB('noteTemplates', appData.noteTemplates);
+            renderManage();
+        };
+        document.getElementById('notes-list').onclick = async (e) => {
+            const btn = e.target.closest('.delete-note-btn');
+            if (!btn) return;
+            appData.noteTemplates = appData.noteTemplates.filter(n => n.id !== btn.dataset.id);
+            await updateDB('noteTemplates', appData.noteTemplates);
+            renderManage();
+        };
+        document.getElementById('add-store-item-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const item = { id: uid(), name: document.getElementById('item-name').value.trim(), price: parseInt(document.getElementById('item-price').value, 10) };
+            const file = document.getElementById('item-image').files[0];
+            const finish = async () => {
+                appData.classStoreItems.push(item);
+                await updateDB('classStoreItems', appData.classStoreItems);
+                e.target.reset();
+                renderManage();
+            };
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (re) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const scale = 300 / img.width;
+                        canvas.width = 300;
+                        canvas.height = img.height * scale;
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                        item.imageSrc = canvas.toDataURL('image/jpeg', 0.7);
+                        finish();
+                    };
+                    img.src = re.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else await finish();
+        };
+        document.getElementById('store-manage-list').onclick = async (e) => {
+            const btn = e.target.closest('.delete-item-btn');
+            if (!btn) return;
+            appData.classStoreItems = appData.classStoreItems.filter(i => i.id !== btn.dataset.id);
+            await updateDB('classStoreItems', appData.classStoreItems);
+            renderManage();
+        };
+
+        loadApp();
+    });
+    </script>
+</body>
+</html>

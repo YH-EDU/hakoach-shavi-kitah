@@ -1,0 +1,21 @@
+{
+  "name": "הכח שבי — כיתה",
+  "short_name": "הכח שבי",
+  "description": "מערכת ניקוד כיתתית למורה ולכיתה אחת",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#e3f2fd",
+  "theme_color": "#1976D2",
+  "orientation": "any",
+  "lang": "he",
+  "dir": "rtl",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ]
+}
