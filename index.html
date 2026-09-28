@@ -215,6 +215,12 @@
             -webkit-app-region: drag; app-region: drag;
         }
         button, input, select, textarea, a { -webkit-app-region: no-drag; app-region: no-drag; }
+        #float-note { display: none; text-align: center; padding: 56px 16px; color: #607d8b; font-size: 1.05em; line-height: 1.7; }
+        body.float-on #class-table-wrapper,
+        body.float-on #mobile-day-view,
+        body.float-on .class-scoring-header,
+        body.float-on .class-actions { display: none !important; }
+        body.float-on #float-note { display: block; }
 
         @media (max-width: 768px) {
             body { padding: 6px; }
@@ -352,6 +358,10 @@
                     <button type="button" id="outstanding-btn" class="utility-btn" style="background:#009688;">מצטייני שיעור</button>
                     <button type="button" id="wheel-btn" class="utility-btn gold">גלגל מזל</button>
                 </div>
+            </div>
+            <div id="float-note">
+                <p>חלונית היום פתוחה במקום הטבלה, מעל השיעור.</p>
+                <p>לחיצה על שם השיעור מחליפה את הצבע של כל השורה.</p>
             </div>
             <main id="class-table-wrapper">
                 <table id="points-table">
@@ -844,23 +854,31 @@
         };
 
         const MINI_CSS = `
-            html, body { margin: 0; background: #fff; color: #222; font-family: Assistant, Arial, sans-serif; }
-            body { padding: 8px 8px 12px; }
-            .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-            .day { font-weight: 800; color: #1565C0; font-size: 15px; }
-            .pts { background: #1976D2; color: #fff; border-radius: 10px; padding: 2px 10px; font-weight: 800; font-size: 14px; }
-            .row { display: flex; align-items: center; gap: 6px; padding: 7px 4px; border-bottom: 1px solid #e3eef8; }
-            .row.break { background: #e0f7fa; color: #00695c; font-weight: 800; justify-content: space-between; }
-            .time { width: 42px; font-weight: 800; color: #607d8b; font-size: 12px; flex: none; }
-            .name { flex: 1; font-weight: 800; font-size: 14px; }
-            select { border: 1px solid #c5d4e8; border-radius: 8px; padding: 4px; font-weight: 800; font-family: inherit; background: #fff; }
-            select.s0 { background: #d32f2f; color: #fff; border-color: #d32f2f; }
-            select.s1 { background: #f57c00; color: #fff; border-color: #f57c00; }
-            select.s2 { background: #fdd835; color: #333; border-color: #fdd835; }
-            select.s3 { background: #388e3c; color: #fff; border-color: #388e3c; }
-            .star { border: none; background: none; cursor: pointer; font-size: 16px; opacity: 0.45; }
-            .star.on { opacity: 1; }
+            html, body { margin: 0; background: #f4f7fb; color: #263238; font-family: Assistant, Arial, sans-serif; }
+            body { padding: 8px; }
+            .day { text-align: center; font-weight: 800; font-size: 13px; color: #546e7a; margin: 0 0 8px; }
+            .row {
+                display: block; width: 100%; border: none; border-radius: 8px;
+                margin: 0 0 5px; padding: 9px 10px; text-align: right;
+                font-family: inherit; font-weight: 800; font-size: 16px;
+                cursor: pointer; background: #fff; color: #37474f;
+            }
+            .row small { display: block; font-size: 11px; font-weight: 600; opacity: 0.7; margin-top: 1px; }
+            .row.s0 { background: #e53935; color: #fff; }
+            .row.s1 { background: #fb8c00; color: #fff; }
+            .row.s2 { background: #fdd835; color: #333; }
+            .row.s3 { background: #43a047; color: #fff; }
         `;
+        const nextScore = (score) => {
+            const order = [-1, 3, 2, 1, 0];
+            const i = order.indexOf(Number(score));
+            return order[(i < 0 ? 0 : i + 1) % order.length];
+        };
+        const setFloatMode = (on) => {
+            document.body.classList.toggle('float-on', on);
+            const btn = document.getElementById('mini-window-btn');
+            if (btn) btn.textContent = on ? 'החזר טבלה' : 'חלונית שיעור';
+        };
 
         const prepareMiniDoc = (win) => {
             const doc = win.document;
@@ -869,7 +887,7 @@
             doc.close();
             const font = doc.createElement('link');
             font.rel = 'stylesheet';
-            font.href = 'https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&display=swap';
+            font.href = 'https://fonts.googleapis.com/css2?family=Assistant:wght@600;800&display=swap';
             doc.head.appendChild(font);
             const style = doc.createElement('style');
             style.textContent = MINI_CSS;
@@ -886,46 +904,24 @@
             const weekData = appData.weeks?.[week] || {};
             let rows = '';
             PERIODS.forEach((period) => {
+                if (period.type !== 'score') return;
                 const subj = defaultLessonName(period, dayIdx);
-                if (period.type === 'break') {
-                    if (!subj && dayIdx === 5) return;
-                    rows += `<div class="row break"><span class="time">${period.time}</span><span>${escapeHtml(subj || 'שבת שלום')}</span></div>`;
-                    return;
-                }
                 if (!subj) return;
                 const cellId = cellIdFor(period, dayIdx);
-                const cell = weekData[cellId] || { score: -1 };
-                const score = cell.score;
+                const score = (weekData[cellId] || { score: -1 }).score;
                 const name = appData.lessonNames?.[cellId] || subj;
-                const stars = (cell.stars || []).length;
-                rows += `<div class="row">
-                    <span class="time">${period.time}</span>
-                    <span class="name">${escapeHtml(name)}</span>
-                    <select data-cell-id="${cellId}" class="${score > -1 ? 's' + score : ''}">
-                        <option value="-1" ${score == -1 ? 'selected' : ''}>—</option>
-                        <option value="0" ${score == 0 ? 'selected' : ''}>0</option>
-                        <option value="1" ${score == 1 ? 'selected' : ''}>1</option>
-                        <option value="2" ${score == 2 ? 'selected' : ''}>2</option>
-                        <option value="3" ${score == 3 ? 'selected' : ''}>3</option>
-                    </select>
-                    <button type="button" class="star ${stars ? 'on' : ''}" data-cell-id="${cellId}">⭐${stars ? stars : ''}</button>
-                </div>`;
+                rows += `<button type="button" class="row ${score > -1 ? 's' + score : ''}" data-cell-id="${cellId}" data-score="${score}">${escapeHtml(name)}<small>${period.time}</small></button>`;
             });
-            root.innerHTML = `<div class="head"><div class="day">${dayNames[dayIdx]}${he ? ' · ' + he.day + ' ' + he.month : ''}</div><div class="pts">${calculateClassPoints()}</div></div>${rows}`;
-            root.querySelectorAll('select').forEach(sel => {
-                sel.addEventListener('change', () => saveCellScore(sel.dataset.cellId, parseInt(sel.value, 10)));
-            });
-            root.querySelectorAll('.star').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    try { window.focus(); } catch (e) {}
-                    openOutstandingModal(btn.dataset.cellId);
-                });
+            root.innerHTML = `<div class="day">${dayNames[dayIdx]}${he ? ' · ' + he.day + ' ' + he.month : ''}</div>${rows}`;
+            root.querySelectorAll('.row').forEach(btn => {
+                btn.addEventListener('click', () => saveCellScore(btn.dataset.cellId, nextScore(btn.dataset.score)));
             });
         };
 
         const closeMiniWindow = () => {
             if (miniWindow && !miniWindow.closed) miniWindow.close();
             miniWindow = null;
+            setFloatMode(false);
         };
 
         const openMiniWindow = async () => {
@@ -933,15 +929,22 @@
                 closeMiniWindow();
                 return;
             }
-            const width = 300;
-            const height = Math.min(760, screen.availHeight - 80);
+            const dayIdx = todayColIndex();
+            const count = PERIODS.filter(p => p.type === 'score' && p.days[dayIdx]).length || 6;
+            const width = 220;
+            const height = Math.min(36 + count * 52, screen.availHeight - 48);
+            const attach = (win) => {
+                prepareMiniDoc(win);
+                miniWindow = win;
+                setFloatMode(true);
+                win.addEventListener('pagehide', () => {
+                    if (miniWindow === win) { miniWindow = null; setFloatMode(false); }
+                });
+                renderMini();
+            };
             try {
                 if (window.documentPictureInPicture) {
-                    const pip = await documentPictureInPicture.requestWindow({ width, height });
-                    prepareMiniDoc(pip);
-                    miniWindow = pip;
-                    pip.addEventListener('pagehide', () => { if (miniWindow === pip) miniWindow = null; });
-                    renderMini();
+                    attach(await documentPictureInPicture.requestWindow({ width, height }));
                     return;
                 }
             } catch (e) {
@@ -952,9 +955,7 @@
                 showToast('הדפדפן חסם את החלונית. אשרו חלונות קופצים, או פתחו ב-Chrome / Edge.');
                 return;
             }
-            prepareMiniDoc(pop);
-            miniWindow = pop;
-            renderMini();
+            attach(pop);
         };
 
         const fillLessonSelect = (selectEl, preferredCellId) => {
@@ -1237,6 +1238,7 @@
             clearSession();
             if (miniWindow && !miniWindow.closed) miniWindow.close();
             miniWindow = null;
+            setFloatMode(false);
             showView('login-page');
             document.getElementById('setup-hint').classList.toggle('hidden', !!appData.setupComplete);
         };
