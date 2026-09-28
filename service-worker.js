@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hakoach-class-v7';
+const CACHE_NAME = 'hakoach-class-v8';
 
 const urlsToCache = [
   './',

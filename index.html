@@ -507,10 +507,8 @@
 
         const days = ['שעה', 'ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
         const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
-        const KODESH = new Set(['גמרא','תורה','משנה','נביא','הלכה','פר"ש','תנ"ך','בר מצווה','חוגים','העשרה']);
-        const TEFILA = new Set(['שחרית וארוחת בוקר','מנחה וארוחת צהריים']);
         const PERIODS = [
-            { id: 'shaharit', time: '7:20', type: 'score', days: ['שחרית וארוחת בוקר','שחרית וארוחת בוקר','שחרית וארוחת בוקר','שחרית וארוחת בוקר','שחרית וארוחת בוקר','שחרית וארוחת בוקר'] },
+            { id: 'shaharit', time: '7:20', type: 'score', days: ['שחרית','שחרית','שחרית','שחרית','שחרית','שחרית'] },
             { id: 'p835', time: '8:35', type: 'score', days: ['גמרא','גמרא','תורה','גמרא','גמרא','תורה'] },
             { id: 'p920', time: '9:20', type: 'score', days: ['גמרא','גמרא','משנה','גמרא','גמרא','עברית'] },
             { id: 'brk1', time: '10:05', type: 'break', days: ['הפסקה','הפסקה','הפסקה','הפסקה','הפסקה','הפסקה'] },
@@ -519,16 +517,10 @@
             { id: 'brk2', time: '11:50', type: 'break', days: ['הפסקה','הפסקה','הפסקה','הפסקה','הפסקה', null] },
             { id: 'p1205', time: '12:05', type: 'score', days: ['אנגלית','מתמטיקה','אנגלית','עברית','אנגלית', null] },
             { id: 'p1250', time: '12:50', type: 'score', days: ['מדעים','מתמטיקה','מתמטיקה','מתמטיקה','אנגלית', null] },
-            { id: 'p1335', time: '13:35', type: 'score', days: ['מנחה וארוחת צהריים','חוגים','היסטוריה','מנחה וארוחת צהריים','מנחה וארוחת צהריים', null] },
-            { id: 'p1430', time: '14:30', type: 'score', days: ['כישורי חיים','חוגים','העשרה','תנ"ך','נביא', null] },
-            { id: 'p1515', time: '15:15', type: 'score', days: ['ספרות','חוגים','העשרה','גיאוגרפיה','בר מצווה', null] }
+            { id: 'p1335', time: '13:35', type: 'score', days: ['מנחה והפסקה','חוגים','מנחה והפסקה','מנחה והפסקה','מנחה והפסקה', null] },
+            { id: 'p1430', time: '14:30', type: 'score', days: ['כישורי חיים','חוגים', null,'תנ"ך','נביא', null] },
+            { id: 'p1515', time: '15:15', type: 'score', days: ['ספרות','חוגים', null,'גיאוגרפיה','בר מצווה', null] }
         ];
-        const subjectTone = (name) => {
-            if (!name) return '';
-            if (TEFILA.has(name)) return 'tefila-cell';
-            if (KODESH.has(name)) return 'kodesh-cell';
-            return 'chol-cell';
-        };
         const MAX_WEEK = 52;
 
         const debounce = (fn, delay) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), delay); }; };
@@ -724,9 +716,25 @@
             m.querySelectorAll('.close-btn').forEach(btn => btn.onclick = () => closeModal(m));
         });
 
-        const defaultLessonName = (period, dayIdx) => period.days[dayIdx] || '';
         const cellIdFor = (period, dayIdx) => `${period.id}-${dayIdx}`;
-        const scoredPeriodsForDay = (dayIdx) => PERIODS.filter(p => p.type === 'score' && p.days[dayIdx]);
+        const lessonNameFor = (period, dayIdx) => {
+            const cellId = cellIdFor(period, dayIdx);
+            const names = appData.lessonNames || {};
+            if (Object.prototype.hasOwnProperty.call(names, cellId)) {
+                const custom = names[cellId];
+                if (custom == null) return '';
+                return String(custom).trim();
+            }
+            return period.days[dayIdx] || '';
+        };
+        const isUnscoredName = (name) => {
+            const n = String(name || '').trim();
+            if (!n) return false;
+            if (n === 'הפסקה' || n === 'חוגים') return true;
+            return n.includes('שחרית') || n.includes('מנחה');
+        };
+        const isScoredLesson = (period, dayIdx) => period.type !== 'break' && !!lessonNameFor(period, dayIdx) && !isUnscoredName(lessonNameFor(period, dayIdx));
+        const scoredPeriodsForDay = (dayIdx) => PERIODS.filter(p => isScoredLesson(p, dayIdx));
 
         const getMobileDayIndex = () => {
             if (mobileDayIndex >= 0) return mobileDayIndex;
@@ -736,8 +744,7 @@
         const todayColIndex = () => Math.min(Math.max(getSystemStatus().dayIndex, 0), 5);
         const lessonOptionsForDay = (week, dayIdx) => scoredPeriodsForDay(dayIdx).map(p => {
             const cellId = cellIdFor(p, dayIdx);
-            const name = appData.lessonNames?.[cellId] || defaultLessonName(p, dayIdx);
-            return { cellId, week, label: `${p.time} — ${name}` };
+            return { cellId, week, label: `${p.time} — ${lessonNameFor(p, dayIdx)}` };
         });
         const starsForCell = (week, cellId) => (appData.weeks?.[week]?.[cellId]?.stars) || [];
 
@@ -781,18 +788,16 @@
                     const isTodayCol = col === todayIdx;
                     const isToday = isTodayCol && (week === sys.week);
                     const hl = `${isTodayCol ? 'is-today-col' : ''} ${isToday ? 'highlight-today' : ''}`;
-                    const subj = defaultLessonName(period, col);
-                    if (period.type === 'break') {
-                        if (col === 5 && !subj) return `<td class="day-col col-${col} ${hl} off-cell">שבת שלום</td>`;
-                        return `<td class="day-col col-${col} ${hl} break-cell">${subj || ''}</td>`;
+                    const lessonName = lessonNameFor(period, col);
+                    if (!lessonName) return `<td class="day-col col-${col} ${hl} off-cell"></td>`;
+                    if (period.type === 'break' || isUnscoredName(lessonName)) {
+                        return `<td class="day-col col-${col} ${hl} break-cell">${escapeHtml(lessonName)}</td>`;
                     }
-                    if (!subj) return `<td class="day-col col-${col} ${hl} off-cell">${col === 5 ? 'שבת שלום' : ''}</td>`;
                     const cellId = cellIdFor(period, col);
                     const cell = weekData[cellId] || { score: -1 };
                     const scoreClass = cell.score > -1 ? `score-${cell.score}` : '';
-                    const lessonName = appData.lessonNames[cellId] || subj;
                     const starCount = (cell.stars || []).length;
-                    const tone = cell.score > -1 ? '' : subjectTone(subj);
+                    const tone = cell.score > -1 ? '' : 'chol-cell';
                     const nameLock = isHomeroom() ? '' : 'readonly';
                     return `<td class="day-col col-${col} ${hl} ${tone}"><div class="cell-content ${scoreClass}" data-cell-id="${cellId}">
                         <input class="lesson-name-input" data-id="${cellId}" value="${escapeHtml(lessonName)}" ${nameLock} title="עריכת שם השיעור" autocomplete="off">
@@ -817,19 +822,15 @@
             const isToday = (week === sys.week) && (dayIdx === Math.min(Math.max(sys.dayIndex, 0), 5));
             let html = '';
             PERIODS.forEach((period) => {
-                const subj = defaultLessonName(period, dayIdx);
-                if (period.type === 'break') {
-                    html += `<div class="mobile-lesson-card" style="background:#e0f2f1;"><div class="mobile-lesson-row"><span class="mobile-lesson-label">${period.time}</span><strong>${subj || 'שבת שלום'}</strong></div></div>`;
-                    return;
-                }
-                if (!subj) {
-                    if (dayIdx === 5) html += `<div class="mobile-lesson-card"><div class="mobile-lesson-row"><span class="mobile-lesson-label">${period.time}</span><span>🕯️ שבת שלום</span></div></div>`;
+                const lessonName = lessonNameFor(period, dayIdx);
+                if (!lessonName) return;
+                if (period.type === 'break' || isUnscoredName(lessonName)) {
+                    html += `<div class="mobile-lesson-card" style="background:#e0f2f1;"><div class="mobile-lesson-row"><span class="mobile-lesson-label">${period.time}</span><strong>${escapeHtml(lessonName)}</strong></div></div>`;
                     return;
                 }
                 const cellId = cellIdFor(period, dayIdx);
                 const cell = weekData[cellId] || { score: -1 };
                 const score = cell.score;
-                const lessonName = appData.lessonNames[cellId] || subj;
                 const starCount = (cell.stars || []).length;
                 html += `<div class="mobile-lesson-card ${score > -1 ? 'score-'+score : ''} ${isToday ? 'today-card' : ''}">
                     <div class="mobile-lesson-row">
@@ -921,12 +922,10 @@
             const weekData = appData.weeks?.[week] || {};
             let rows = '';
             PERIODS.forEach((period) => {
-                if (period.type !== 'score') return;
-                const subj = defaultLessonName(period, dayIdx);
-                if (!subj) return;
+                if (!isScoredLesson(period, dayIdx)) return;
                 const cellId = cellIdFor(period, dayIdx);
                 const score = (weekData[cellId] || { score: -1 }).score;
-                const name = appData.lessonNames?.[cellId] || subj;
+                const name = lessonNameFor(period, dayIdx);
                 const label = score > -1 ? score : '–';
                 rows += `<button type="button" class="row ${score > -1 ? 's' + score : ''}" data-cell-id="${cellId}" data-score="${score}"><span class="name">${escapeHtml(name)}<small>${period.time}</small></span><span class="num">${label}</span></button>`;
             });
@@ -960,7 +959,7 @@
                 return;
             }
             const dayIdx = todayColIndex();
-            const count = PERIODS.filter(p => p.type === 'score' && p.days[dayIdx]).length || 6;
+            const count = scoredPeriodsForDay(dayIdx).length || 6;
             const width = 200;
             const height = Math.min(28 + count * 48, screen.availHeight - 48);
             const attach = (win) => {
@@ -1457,9 +1456,10 @@
         const saveLessonName = (cellId, value) => {
             const name = String(value || '').trim();
             if (!appData.lessonNames) appData.lessonNames = {};
-            if (!name) delete appData.lessonNames[cellId];
-            else appData.lessonNames[cellId] = name;
+            appData.lessonNames[cellId] = name || null;
             debouncedUpdate(`lessonNames.${cellId}`, name || null);
+            renderTable();
+            renderMobileDayView();
             renderMini();
         };
         const renderLessonNamesEditor = () => {
@@ -1472,11 +1472,9 @@
                 if (period.type !== 'score') return;
                 html += `<tr><td>${period.time}</td>`;
                 for (let col = 0; col < 6; col++) {
-                    const subj = defaultLessonName(period, col);
-                    if (!subj) { html += '<td></td>'; continue; }
                     const cellId = cellIdFor(period, col);
-                    const name = appData.lessonNames?.[cellId] || subj;
-                    html += `<td><input class="lesson-edit-input" data-cell-id="${cellId}" value="${escapeHtml(name)}" autocomplete="off"></td>`;
+                    const name = lessonNameFor(period, col);
+                    html += `<td><input class="lesson-edit-input" data-cell-id="${cellId}" value="${escapeHtml(name)}" autocomplete="off" placeholder="ריק"></td>`;
                 }
                 html += '</tr>';
             });
