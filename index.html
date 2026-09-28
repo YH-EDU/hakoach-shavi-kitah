@@ -102,12 +102,13 @@
         #total-points-display { font-size: 2.2em; font-weight: 700; line-height: 1; }
         .total-points-container h2 { font-size: 0.9em; margin: 0 0 5px 0; opacity: 0.9; }
         .header-actions-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; grid-column: 3; }
-        #class-table-wrapper { overflow-x: auto; width: 100%; border: 2px solid rgba(25,118,210,0.25); border-radius: 14px; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 800px; }
-        th, td { border: 1.5px solid #c5d8f0; padding: 2px; text-align: center; vertical-align: top; }
+        #class-table-wrapper { overflow: hidden; overflow-x: auto; width: 100%; border: 2px solid rgba(25,118,210,0.25); border-radius: 14px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 800px; margin: 0; }
+        th, td { border: 1.5px solid #c5d8f0; padding: 2px; text-align: center; vertical-align: middle; overflow: hidden; }
+        #points-table tbody tr:last-child td { border-bottom: none; }
         th { background-color: #ffe082; font-weight: 700; padding: 10px 5px; color: #333; }
         td.time-col { font-weight: 800; background-color: #fff8e1; padding: 8px 4px; font-size: 0.92em; width: 72px; vertical-align: middle; }
-        .cell-content { padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 72px; border-radius: 6px; }
+        .cell-content { padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 64px; border-radius: 6px; box-sizing: border-box; }
         .cell-subject { font-size: 0.82em; font-weight: 800; line-height: 1.2; min-height: 1.2em; }
         .break-cell { background: #b2dfdb; font-weight: 800; color: #00695c; vertical-align: middle !important; padding: 8px; }
         .off-cell { background: #fafafa; color: #9e9e9e; vertical-align: middle !important; }
@@ -735,6 +736,22 @@
         };
         const isScoredLesson = (period, dayIdx) => period.type !== 'break' && !!lessonNameFor(period, dayIdx) && !isUnscoredName(lessonNameFor(period, dayIdx));
         const scoredPeriodsForDay = (dayIdx) => PERIODS.filter(p => isScoredLesson(p, dayIdx));
+        const isPlainBlock = (period, dayIdx) => {
+            const name = lessonNameFor(period, dayIdx);
+            return !name || period.type === 'break' || isUnscoredName(name);
+        };
+        const sameMergeBlock = (aPeriod, bPeriod, dayIdx) => {
+            if (!isPlainBlock(aPeriod, dayIdx) || !isPlainBlock(bPeriod, dayIdx)) return false;
+            return lessonNameFor(aPeriod, dayIdx) === lessonNameFor(bPeriod, dayIdx);
+        };
+        const blockSpanFrom = (startIdx, dayIdx) => {
+            let span = 1;
+            for (let i = startIdx + 1; i < PERIODS.length; i++) {
+                if (!sameMergeBlock(PERIODS[startIdx], PERIODS[i], dayIdx)) break;
+                span++;
+            }
+            return span;
+        };
 
         const getMobileDayIndex = () => {
             if (mobileDayIndex >= 0) return mobileDayIndex;
@@ -781,17 +798,26 @@
             }
             document.getElementById('table-header').innerHTML = headers;
             const weekData = appData.weeks[week] || {};
+            const skip = [0, 0, 0, 0, 0, 0];
             let rows = '';
-            PERIODS.forEach((period) => {
+            PERIODS.forEach((period, pi) => {
                 rows += `<tr><td class="time-col">${period.time}</td>`;
-                rows += [0,1,2,3,4,5].map((col) => {
+                for (let col = 0; col < 6; col++) {
+                    if (skip[col] > 0) { skip[col]--; continue; }
                     const isTodayCol = col === todayIdx;
                     const isToday = isTodayCol && (week === sys.week);
                     const hl = `${isTodayCol ? 'is-today-col' : ''} ${isToday ? 'highlight-today' : ''}`;
                     const lessonName = lessonNameFor(period, col);
-                    if (!lessonName) return `<td class="day-col col-${col} ${hl} off-cell"></td>`;
+                    const span = isPlainBlock(period, col) ? blockSpanFrom(pi, col) : 1;
+                    if (span > 1) skip[col] = span - 1;
+                    const spanAttr = span > 1 ? ` rowspan="${span}"` : '';
+                    if (!lessonName) {
+                        rows += `<td class="day-col col-${col} ${hl} off-cell"${spanAttr}></td>`;
+                        continue;
+                    }
                     if (period.type === 'break' || isUnscoredName(lessonName)) {
-                        return `<td class="day-col col-${col} ${hl} break-cell">${escapeHtml(lessonName)}</td>`;
+                        rows += `<td class="day-col col-${col} ${hl} break-cell"${spanAttr}>${escapeHtml(lessonName)}</td>`;
+                        continue;
                     }
                     const cellId = cellIdFor(period, col);
                     const cell = weekData[cellId] || { score: -1 };
@@ -799,12 +825,12 @@
                     const starCount = (cell.stars || []).length;
                     const tone = cell.score > -1 ? '' : 'chol-cell';
                     const nameLock = isHomeroom() ? '' : 'readonly';
-                    return `<td class="day-col col-${col} ${hl} ${tone}"><div class="cell-content ${scoreClass}" data-cell-id="${cellId}">
+                    rows += `<td class="day-col col-${col} ${hl} ${tone}"><div class="cell-content ${scoreClass}" data-cell-id="${cellId}">
                         <input class="lesson-name-input" data-id="${cellId}" value="${escapeHtml(lessonName)}" ${nameLock} title="עריכת שם השיעור" autocomplete="off">
                         ${scoreSelectHtml(cellId, cell.score, 'point-select')}
                         <button type="button" class="star-lesson-btn ${starCount ? 'has-stars' : ''}" data-cell-id="${cellId}" title="מצטיינים בשיעור">⭐${starCount ? starCount : ''}</button>
                     </div></td>`;
-                }).join('');
+                }
                 rows += `</tr>`;
             });
             document.getElementById('table-body').innerHTML = rows;
@@ -821,12 +847,21 @@
             const weekData = appData.weeks[week] || {};
             const isToday = (week === sys.week) && (dayIdx === Math.min(Math.max(sys.dayIndex, 0), 5));
             let html = '';
-            PERIODS.forEach((period) => {
+            for (let pi = 0; pi < PERIODS.length; pi++) {
+                const period = PERIODS[pi];
                 const lessonName = lessonNameFor(period, dayIdx);
-                if (!lessonName) return;
+                if (!lessonName) {
+                    const emptySpan = blockSpanFrom(pi, dayIdx);
+                    pi += emptySpan - 1;
+                    continue;
+                }
                 if (period.type === 'break' || isUnscoredName(lessonName)) {
-                    html += `<div class="mobile-lesson-card" style="background:#e0f2f1;"><div class="mobile-lesson-row"><span class="mobile-lesson-label">${period.time}</span><strong>${escapeHtml(lessonName)}</strong></div></div>`;
-                    return;
+                    const span = blockSpanFrom(pi, dayIdx);
+                    const endTime = PERIODS[pi + span - 1].time;
+                    const timeLabel = span > 1 ? `${period.time}–${endTime}` : period.time;
+                    html += `<div class="mobile-lesson-card" style="background:#e0f2f1;"><div class="mobile-lesson-row"><span class="mobile-lesson-label">${timeLabel}</span><strong>${escapeHtml(lessonName)}</strong></div></div>`;
+                    pi += span - 1;
+                    continue;
                 }
                 const cellId = cellIdFor(period, dayIdx);
                 const cell = weekData[cellId] || { score: -1 };
@@ -846,7 +881,7 @@
                         <button type="button" class="star-lesson-btn ${starCount ? 'has-stars' : ''}" data-cell-id="${cellId}">⭐${starCount ? starCount : ''}</button>
                     </div>
                 </div>`;
-            });
+            }
             document.getElementById('mobile-lessons-container').innerHTML = html || '<div class="mobile-empty-day">אין שיעורים ביום זה</div>';
         };
 
