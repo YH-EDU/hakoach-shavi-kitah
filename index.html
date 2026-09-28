@@ -216,21 +216,46 @@
         }
         button, input, select, textarea, a { -webkit-app-region: no-drag; app-region: no-drag; }
 
-        /* ===== צמצום חלון (כפתור הריבוע) — בלי מסגרת, רק שיעורי היום ===== */
+        #compact-toggle-btn {
+            position: fixed;
+            left: max(10px, env(safe-area-inset-left));
+            top: max(10px, env(titlebar-area-height, 10px), env(safe-area-inset-top));
+            z-index: 5000;
+            width: 42px;
+            height: 42px;
+            border: 2.5px solid var(--primary-color);
+            background: #fff;
+            color: var(--primary-color);
+            border-radius: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+            font-family: inherit;
+            line-height: 1;
+            padding: 0;
+        }
+        body.in-class #compact-toggle-btn { display: flex; }
+        body.compact-ui #compact-toggle-btn { background: var(--primary-color); color: #fff; }
+
+        /* ===== צמצום — רק עמודת היום, בלי מסגרת ===== */
         body.compact-ui {
             padding: 0 !important;
             margin: 0 !important;
             background: #ffffff !important;
             min-height: 100vh;
-            overflow: hidden;
+            overflow: auto;
         }
         body.compact-ui #login-page,
         body.compact-ui #setup-page,
         body.compact-ui #manage-panel,
         body.compact-ui #admin-panel { display: none !important; }
+        body.compact-ui #main-app.main-container,
         body.compact-ui .main-container {
             margin: 0 !important;
-            padding: 6px 6px 8px !important;
+            padding: 8px 8px 12px !important;
             border-radius: 0 !important;
             box-shadow: none !important;
             border: none !important;
@@ -238,31 +263,51 @@
             background: #ffffff !important;
             max-width: none !important;
             width: 100% !important;
-            height: 100vh;
-            overflow-y: auto;
+            min-height: 100vh;
         }
         body.compact-ui header,
         body.compact-ui .class-actions,
-        body.compact-ui #class-table-wrapper,
         body.compact-ui .header-actions-row,
         body.compact-ui .week-navigation,
         body.compact-ui #install-app-btn,
         body.compact-ui .mobile-day-header,
-        body.compact-ui #admin-login-key-btn { display: none !important; }
-        body.compact-ui #mobile-day-view { display: block !important; }
+        body.compact-ui #admin-login-key-btn,
+        body.compact-ui #mobile-day-view { display: none !important; }
+        body.compact-ui #compact-bar {
+            display: flex !important;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+            color: var(--primary-color);
+            padding: 4px 48px 10px;
+            font-size: 1.05em;
+        }
         body.compact-ui .class-scoring-header {
             display: flex !important;
-            grid-template-columns: none;
+            grid-template-columns: none !important;
             justify-content: center;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         body.compact-ui .header-top-row { display: flex; width: 100%; justify-content: center; }
-        body.compact-ui .total-points-container { min-width: unset; padding: 3px 10px; }
+        body.compact-ui .total-points-container { min-width: unset; padding: 3px 12px; }
         body.compact-ui #total-points-display { font-size: 1.35em; }
-        body.compact-ui .mobile-lesson-card { border-radius: 10px; margin-bottom: 6px; }
-        body.compact-ui .mobile-lesson-row { padding: 8px 8px; gap: 6px; }
-        body.compact-ui .mobile-lesson-label { min-width: 44px; font-size: 0.75em; }
-        #compact-bar { display: none !important; }
+        body.compact-ui #class-table-wrapper {
+            display: block !important;
+            border: none !important;
+            overflow: visible !important;
+            width: 100%;
+        }
+        body.compact-ui table {
+            min-width: 0 !important;
+            width: 100% !important;
+            table-layout: auto !important;
+        }
+        body.compact-ui .day-col { display: none !important; }
+        body.compact-ui .day-col.is-today-col { display: table-cell !important; width: auto; }
+        body.compact-ui .time-col { display: table-cell !important; width: 58px; padding: 6px 4px !important; }
+        body.compact-ui .cell-content { min-height: 64px; }
+        body.compact-ui th { padding: 8px 4px; }
+        #compact-bar { display: none; }
 
         @media (max-width: 768px) {
             body { padding: 6px; }
@@ -294,6 +339,7 @@
 </head>
 <body>
     <div class="titlebar-drag" aria-hidden="true"></div>
+    <button type="button" id="compact-toggle-btn" title="צמצום לעמודת היום">▢</button>
     <div id="update-notification"><span>יש גרסה חדשה לאפליקציה!</span><button id="reload-btn">עדכן עכשיו</button></div>
 
     <div id="login-page" class="main-container">
@@ -706,7 +752,10 @@
         };
 
         const views = ['login-page', 'setup-page', 'main-app', 'manage-panel', 'admin-panel'];
-        const showView = (id) => views.forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
+        const showView = (id) => {
+            views.forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
+            document.body.classList.toggle('in-class', id === 'main-app');
+        };
         const openModal = (id) => document.getElementById(id)?.classList.add('show');
         const closeModal = (el) => {
             const m = typeof el === 'string' ? document.getElementById(el) : el?.closest?.('.modal');
@@ -753,27 +802,72 @@
             m.querySelectorAll('.close-btn').forEach(btn => btn.onclick = () => closeModal(m));
         });
 
-        const isPhoneUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        let compactPinned = false;
+        const todayColIndex = () => {
+            const { dayIndex } = getSystemStatus();
+            return Math.min(Math.max(dayIndex, 0), 5);
+        };
+        const updateCompactButton = () => {
+            const btn = document.getElementById('compact-toggle-btn');
+            if (!btn) return;
+            btn.textContent = compactMode ? '▣' : '▢';
+            btn.title = compactMode ? 'חזרה למסך מלא' : 'צמצום לעמודת היום';
+        };
         const applyCompact = (on) => {
             compactMode = on;
             document.body.classList.toggle('compact-ui', on);
+            updateCompactButton();
             if (on) {
+                const sys = getSystemStatus();
+                if (appData) appData.currentWeek = sys.week;
                 mobileDayIndex = -1;
-                if (currentUser && !document.getElementById('main-app').classList.contains('hidden')) {
+            }
+            if (currentUser && !document.getElementById('main-app').classList.contains('hidden')) {
+                if (typeof renderTable === 'function') {
                     renderTable();
                     renderMobileDayView();
                     document.getElementById('total-points-display').textContent = calculateClassPoints();
+                    const compactLabel = document.getElementById('compact-day-label');
+                    if (compactLabel) {
+                        const dayIdx = todayColIndex();
+                        const he = toHebrewDate(getColDate(appData.currentWeek, dayIdx));
+                        compactLabel.textContent = `${dayNames[dayIdx]}${he ? ' · ' + he.day + ' ' + he.month : ''}`;
+                    }
                 }
-            } else if (currentUser && !document.getElementById('main-app').classList.contains('hidden')) {
-                renderAll();
             }
+        };
+        const enterCompactWindow = () => {
+            compactPinned = true;
+            applyCompact(true);
+            try {
+                window.resizeTo(340, Math.min(screen.availHeight - 40, 860));
+            } catch (e) { /* דפדפן עלול לחסום שינוי גודל לשונית */ }
+        };
+        const exitCompactWindow = () => {
+            compactPinned = false;
+            applyCompact(false);
+            try {
+                window.resizeTo(Math.min(screen.availWidth, 1200), Math.min(screen.availHeight - 40, 860));
+            } catch (e) {}
         };
         const syncCompactFromWindow = () => {
             const onMain = currentUser && !document.getElementById('main-app').classList.contains('hidden');
-            const should = onMain && !isPhoneUA && window.innerWidth <= 460;
+            if (!onMain) {
+                if (compactMode) applyCompact(false);
+                return;
+            }
+            if (compactPinned) {
+                if (!compactMode) applyCompact(true);
+                return;
+            }
+            const should = window.innerWidth <= 640;
             if (should !== compactMode) applyCompact(should);
         };
         window.addEventListener('resize', syncCompactFromWindow);
+        document.getElementById('compact-toggle-btn').onclick = () => {
+            if (compactMode) exitCompactWindow();
+            else enterCompactWindow();
+        };
 
         const defaultLessonName = (period, dayIdx) => period.days[dayIdx] || '';
         const cellIdFor = (period, dayIdx) => `${period.id}-${dayIdx}`;
@@ -808,15 +902,19 @@
         const renderTable = () => {
             const sys = getSystemStatus();
             const week = appData.currentWeek;
+            const todayIdx = todayColIndex();
             let headers = '';
             for (let i = 0; i < days.length; i++) {
-                const isToday = (i > 0) && (week === sys.week) && ((i - 1) === sys.dayIndex);
+                const col = i - 1;
+                const isTodayCol = i > 0 && col === todayIdx;
+                const isToday = isTodayCol && (week === sys.week);
                 let dayLabel = days[i];
                 if (i > 0) {
-                    const he = toHebrewDate(getColDate(week, i - 1));
+                    const he = toHebrewDate(getColDate(week, col));
                     if (he) dayLabel += `<br><span style="font-size:0.72em;font-weight:500;opacity:0.85;">${he.day} ${he.month}</span>`;
                 }
-                headers += `<th class="${isToday ? 'highlight-today' : ''}">${dayLabel}</th>`;
+                const colClass = i === 0 ? 'time-col' : `day-col col-${col}${isTodayCol ? ' is-today-col' : ''}${isToday ? ' highlight-today' : ''}`;
+                headers += `<th class="${colClass}">${dayLabel}</th>`;
             }
             document.getElementById('table-header').innerHTML = headers;
             const weekData = appData.weeks[week] || {};
@@ -824,21 +922,22 @@
             PERIODS.forEach((period) => {
                 rows += `<tr><td class="time-col">${period.time}</td>`;
                 rows += [0,1,2,3,4,5].map((col) => {
-                    const isToday = (week === sys.week) && (col === sys.dayIndex);
-                    const hl = isToday ? 'highlight-today' : '';
+                    const isTodayCol = col === todayIdx;
+                    const isToday = isTodayCol && (week === sys.week);
+                    const hl = `${isTodayCol ? 'is-today-col' : ''} ${isToday ? 'highlight-today' : ''}`;
                     const subj = defaultLessonName(period, col);
                     if (period.type === 'break') {
-                        if (col === 5 && !subj) return `<td class="${hl} off-cell">שבת שלום</td>`;
-                        return `<td class="${hl} break-cell">${subj || ''}</td>`;
+                        if (col === 5 && !subj) return `<td class="day-col col-${col} ${hl} off-cell">שבת שלום</td>`;
+                        return `<td class="day-col col-${col} ${hl} break-cell">${subj || ''}</td>`;
                     }
-                    if (!subj) return `<td class="${hl} off-cell">${col === 5 ? 'שבת שלום' : ''}</td>`;
+                    if (!subj) return `<td class="day-col col-${col} ${hl} off-cell">${col === 5 ? 'שבת שלום' : ''}</td>`;
                     const cellId = cellIdFor(period, col);
                     const cell = weekData[cellId] || { score: -1 };
                     const scoreClass = cell.score > -1 ? `score-${cell.score}` : '';
                     const lessonName = appData.lessonNames[cellId] || subj;
                     const starCount = (cell.stars || []).length;
                     const tone = cell.score > -1 ? '' : subjectTone(subj);
-                    return `<td class="${hl} ${tone}"><div class="cell-content ${scoreClass}" data-cell-id="${cellId}">
+                    return `<td class="day-col col-${col} ${hl} ${tone}"><div class="cell-content ${scoreClass}" data-cell-id="${cellId}">
                         <div class="cell-subject">${escapeHtml(lessonName)}</div>
                         ${scoreSelectHtml(cellId, cell.score, 'point-select')}
                         <button type="button" class="star-lesson-btn ${starCount ? 'has-stars' : ''}" data-cell-id="${cellId}" title="מצטיינים בשיעור">⭐${starCount ? starCount : ''}</button>
@@ -1197,7 +1296,9 @@
             currentUser = null;
             clearSession();
             compactMode = false;
-            document.body.classList.remove('compact-ui');
+            compactPinned = false;
+            document.body.classList.remove('compact-ui', 'in-class');
+            updateCompactButton();
             showView('login-page');
             document.getElementById('setup-hint').classList.toggle('hidden', !!appData.setupComplete);
         };
