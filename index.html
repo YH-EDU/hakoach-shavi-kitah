@@ -216,99 +216,6 @@
         }
         button, input, select, textarea, a { -webkit-app-region: no-drag; app-region: no-drag; }
 
-        #compact-toggle-btn {
-            position: fixed;
-            left: max(10px, env(safe-area-inset-left));
-            top: max(10px, env(titlebar-area-height, 10px), env(safe-area-inset-top));
-            z-index: 5000;
-            width: 42px;
-            height: 42px;
-            border: 2.5px solid var(--primary-color);
-            background: #fff;
-            color: var(--primary-color);
-            border-radius: 10px;
-            font-size: 20px;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.18);
-            font-family: inherit;
-            line-height: 1;
-            padding: 0;
-        }
-        body.in-class #compact-toggle-btn { display: flex; }
-        body.compact-ui #compact-toggle-btn { background: var(--primary-color); color: #fff; }
-
-        /* ===== צמצום — רק עמודת היום, בלי מסגרת ===== */
-        body.compact-ui {
-            padding: 0 !important;
-            margin: 0 !important;
-            background: #ffffff !important;
-            min-height: 100vh;
-            overflow: auto;
-        }
-        body.compact-ui #login-page,
-        body.compact-ui #setup-page,
-        body.compact-ui #manage-panel,
-        body.compact-ui #admin-panel { display: none !important; }
-        body.compact-ui #main-app.main-container,
-        body.compact-ui .main-container {
-            margin: 0 !important;
-            padding: 8px 8px 12px !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-            backdrop-filter: none !important;
-            background: #ffffff !important;
-            max-width: none !important;
-            width: 100% !important;
-            min-height: 100vh;
-        }
-        body.compact-ui header,
-        body.compact-ui .class-actions,
-        body.compact-ui .header-actions-row,
-        body.compact-ui .week-navigation,
-        body.compact-ui #install-app-btn,
-        body.compact-ui .mobile-day-header,
-        body.compact-ui #admin-login-key-btn,
-        body.compact-ui #mobile-day-view { display: none !important; }
-        body.compact-ui #compact-bar {
-            display: flex !important;
-            justify-content: center;
-            align-items: center;
-            font-weight: 800;
-            color: var(--primary-color);
-            padding: 4px 48px 10px;
-            font-size: 1.05em;
-        }
-        body.compact-ui .class-scoring-header {
-            display: flex !important;
-            grid-template-columns: none !important;
-            justify-content: center;
-            margin-bottom: 8px;
-        }
-        body.compact-ui .header-top-row { display: flex; width: 100%; justify-content: center; }
-        body.compact-ui .total-points-container { min-width: unset; padding: 3px 12px; }
-        body.compact-ui #total-points-display { font-size: 1.35em; }
-        body.compact-ui #class-table-wrapper {
-            display: block !important;
-            border: none !important;
-            overflow: visible !important;
-            width: 100%;
-        }
-        body.compact-ui table {
-            min-width: 0 !important;
-            width: 100% !important;
-            table-layout: auto !important;
-        }
-        body.compact-ui .day-col { display: none !important; }
-        body.compact-ui .day-col.is-today-col { display: table-cell !important; width: auto; }
-        body.compact-ui .time-col { display: table-cell !important; width: 58px; padding: 6px 4px !important; }
-        body.compact-ui .cell-content { min-height: 64px; }
-        body.compact-ui th { padding: 8px 4px; }
-        #compact-bar { display: none; }
-
         @media (max-width: 768px) {
             body { padding: 6px; }
             .main-container { margin: 6px auto; padding: 14px 12px; border-radius: 18px; max-width: 100%; }
@@ -334,12 +241,10 @@
             body { padding: 0; padding-top: env(titlebar-area-height, 0px); }
             .main-container { margin: 12px auto; }
         }
-        body.compact-ui { padding-top: env(titlebar-area-height, 0px) !important; }
     </style>
 </head>
 <body>
     <div class="titlebar-drag" aria-hidden="true"></div>
-    <button type="button" id="compact-toggle-btn" title="צמצום לעמודת היום">▢</button>
     <div id="update-notification"><span>יש גרסה חדשה לאפליקציה!</span><button id="reload-btn">עדכן עכשיו</button></div>
 
     <div id="login-page" class="main-container">
@@ -413,13 +318,13 @@
     </div>
 
     <div id="main-app" class="main-container hidden">
-        <div id="compact-bar"><strong id="compact-day-label"></strong></div>
         <header>
             <div>
                 <h1 id="main-title">הכיתה</h1>
                 <div class="teacher-badge" id="logged-teacher-label"></div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                <button type="button" id="mini-window-btn" class="utility-btn gold" title="חלונית צפה של שיעורי היום, מעל שאר התוכנות">חלונית שיעור</button>
                 <button type="button" id="open-admin-from-app-btn" class="utility-btn admin-action admin-only hidden">ניהול מורים</button>
                 <button type="button" id="open-manage-btn" class="utility-btn admin-action homeroom-only">ניהול כיתה</button>
                 <button type="button" id="logout-btn" class="utility-btn">יציאה</button>
@@ -574,7 +479,7 @@
 
         let appData = {};
         let currentUser = null;
-        let compactMode = false;
+        let miniWindow = null;
         let mobileDayIndex = -1;
         let outstandingContext = { week: null, cellId: null };
         let wheelNames = [];
@@ -752,10 +657,7 @@
         };
 
         const views = ['login-page', 'setup-page', 'main-app', 'manage-panel', 'admin-panel'];
-        const showView = (id) => {
-            views.forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
-            document.body.classList.toggle('in-class', id === 'main-app');
-        };
+        const showView = (id) => views.forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
         const openModal = (id) => document.getElementById(id)?.classList.add('show');
         const closeModal = (el) => {
             const m = typeof el === 'string' ? document.getElementById(el) : el?.closest?.('.modal');
@@ -802,73 +704,6 @@
             m.querySelectorAll('.close-btn').forEach(btn => btn.onclick = () => closeModal(m));
         });
 
-        let compactPinned = false;
-        const todayColIndex = () => {
-            const { dayIndex } = getSystemStatus();
-            return Math.min(Math.max(dayIndex, 0), 5);
-        };
-        const updateCompactButton = () => {
-            const btn = document.getElementById('compact-toggle-btn');
-            if (!btn) return;
-            btn.textContent = compactMode ? '▣' : '▢';
-            btn.title = compactMode ? 'חזרה למסך מלא' : 'צמצום לעמודת היום';
-        };
-        const applyCompact = (on) => {
-            compactMode = on;
-            document.body.classList.toggle('compact-ui', on);
-            updateCompactButton();
-            if (on) {
-                const sys = getSystemStatus();
-                if (appData) appData.currentWeek = sys.week;
-                mobileDayIndex = -1;
-            }
-            if (currentUser && !document.getElementById('main-app').classList.contains('hidden')) {
-                if (typeof renderTable === 'function') {
-                    renderTable();
-                    renderMobileDayView();
-                    document.getElementById('total-points-display').textContent = calculateClassPoints();
-                    const compactLabel = document.getElementById('compact-day-label');
-                    if (compactLabel) {
-                        const dayIdx = todayColIndex();
-                        const he = toHebrewDate(getColDate(appData.currentWeek, dayIdx));
-                        compactLabel.textContent = `${dayNames[dayIdx]}${he ? ' · ' + he.day + ' ' + he.month : ''}`;
-                    }
-                }
-            }
-        };
-        const enterCompactWindow = () => {
-            compactPinned = true;
-            applyCompact(true);
-            try {
-                window.resizeTo(340, Math.min(screen.availHeight - 40, 860));
-            } catch (e) { /* דפדפן עלול לחסום שינוי גודל לשונית */ }
-        };
-        const exitCompactWindow = () => {
-            compactPinned = false;
-            applyCompact(false);
-            try {
-                window.resizeTo(Math.min(screen.availWidth, 1200), Math.min(screen.availHeight - 40, 860));
-            } catch (e) {}
-        };
-        const syncCompactFromWindow = () => {
-            const onMain = currentUser && !document.getElementById('main-app').classList.contains('hidden');
-            if (!onMain) {
-                if (compactMode) applyCompact(false);
-                return;
-            }
-            if (compactPinned) {
-                if (!compactMode) applyCompact(true);
-                return;
-            }
-            const should = window.innerWidth <= 640;
-            if (should !== compactMode) applyCompact(should);
-        };
-        window.addEventListener('resize', syncCompactFromWindow);
-        document.getElementById('compact-toggle-btn').onclick = () => {
-            if (compactMode) exitCompactWindow();
-            else enterCompactWindow();
-        };
-
         const defaultLessonName = (period, dayIdx) => period.days[dayIdx] || '';
         const cellIdFor = (period, dayIdx) => `${period.id}-${dayIdx}`;
         const scoredPeriodsForDay = (dayIdx) => PERIODS.filter(p => p.type === 'score' && p.days[dayIdx]);
@@ -878,6 +713,7 @@
             const { dayIndex } = getSystemStatus();
             return Math.min(Math.max(dayIndex, 0), 5);
         };
+        const todayColIndex = () => Math.min(Math.max(getSystemStatus().dayIndex, 0), 5);
         const lessonOptionsForDay = (week, dayIdx) => scoredPeriodsForDay(dayIdx).map(p => {
             const cellId = cellIdFor(p, dayIdx);
             const name = appData.lessonNames?.[cellId] || defaultLessonName(p, dayIdx);
@@ -952,16 +788,8 @@
             const sys = getSystemStatus();
             const dayIdx = getMobileDayIndex();
             const week = appData.currentWeek;
-            const dayDate = getColDate(week, dayIdx);
-            const he = toHebrewDate(dayDate);
             const titleEl = document.getElementById('mobile-day-title');
             if (titleEl) titleEl.textContent = dayNames[dayIdx];
-            const compactLabel = document.getElementById('compact-day-label');
-            if (compactLabel) compactLabel.textContent = `${dayNames[dayIdx]}${he ? ' · ' + he.day + ' ' + he.month : ''}`;
-            if (compactMode) {
-                document.getElementById('week-hebrew-text').textContent = he ? `${he.day} ${he.month}` : '';
-                document.getElementById('week-dates-text').textContent = `${String(dayDate.getDate()).padStart(2,'0')}.${String(dayDate.getMonth()+1).padStart(2,'0')}`;
-            }
             document.getElementById('mobile-prev-day').disabled = dayIdx <= 0;
             document.getElementById('mobile-next-day').disabled = dayIdx >= 5;
             const weekData = appData.weeks[week] || {};
@@ -970,12 +798,10 @@
             PERIODS.forEach((period) => {
                 const subj = defaultLessonName(period, dayIdx);
                 if (period.type === 'break') {
-                    if (compactMode) return;
                     html += `<div class="mobile-lesson-card" style="background:#e0f2f1;"><div class="mobile-lesson-row"><span class="mobile-lesson-label">${period.time}</span><strong>${subj || 'שבת שלום'}</strong></div></div>`;
                     return;
                 }
                 if (!subj) {
-                    if (compactMode) return;
                     if (dayIdx === 5) html += `<div class="mobile-lesson-card"><div class="mobile-lesson-row"><span class="mobile-lesson-label">${period.time}</span><span>🕯️ שבת שלום</span></div></div>`;
                     return;
                 }
@@ -1014,7 +840,121 @@
             updateWeekDisplay(appData.currentWeek);
             renderTable();
             renderMobileDayView();
-            syncCompactFromWindow();
+            renderMini();
+        };
+
+        const MINI_CSS = `
+            html, body { margin: 0; background: #fff; color: #222; font-family: Assistant, Arial, sans-serif; }
+            body { padding: 8px 8px 12px; }
+            .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+            .day { font-weight: 800; color: #1565C0; font-size: 15px; }
+            .pts { background: #1976D2; color: #fff; border-radius: 10px; padding: 2px 10px; font-weight: 800; font-size: 14px; }
+            .row { display: flex; align-items: center; gap: 6px; padding: 7px 4px; border-bottom: 1px solid #e3eef8; }
+            .row.break { background: #e0f7fa; color: #00695c; font-weight: 800; justify-content: space-between; }
+            .time { width: 42px; font-weight: 800; color: #607d8b; font-size: 12px; flex: none; }
+            .name { flex: 1; font-weight: 800; font-size: 14px; }
+            select { border: 1px solid #c5d4e8; border-radius: 8px; padding: 4px; font-weight: 800; font-family: inherit; background: #fff; }
+            select.s0 { background: #d32f2f; color: #fff; border-color: #d32f2f; }
+            select.s1 { background: #f57c00; color: #fff; border-color: #f57c00; }
+            select.s2 { background: #fdd835; color: #333; border-color: #fdd835; }
+            select.s3 { background: #388e3c; color: #fff; border-color: #388e3c; }
+            .star { border: none; background: none; cursor: pointer; font-size: 16px; opacity: 0.45; }
+            .star.on { opacity: 1; }
+        `;
+
+        const prepareMiniDoc = (win) => {
+            const doc = win.document;
+            doc.open();
+            doc.write('<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>שיעור היום</title></head><body><div id="mini-root"></div></body></html>');
+            doc.close();
+            const font = doc.createElement('link');
+            font.rel = 'stylesheet';
+            font.href = 'https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&display=swap';
+            doc.head.appendChild(font);
+            const style = doc.createElement('style');
+            style.textContent = MINI_CSS;
+            doc.head.appendChild(style);
+        };
+
+        const renderMini = () => {
+            if (!miniWindow || miniWindow.closed) return;
+            const root = miniWindow.document.getElementById('mini-root');
+            if (!root) return;
+            const dayIdx = todayColIndex();
+            const week = appData.currentWeek;
+            const he = toHebrewDate(getColDate(week, dayIdx));
+            const weekData = appData.weeks?.[week] || {};
+            let rows = '';
+            PERIODS.forEach((period) => {
+                const subj = defaultLessonName(period, dayIdx);
+                if (period.type === 'break') {
+                    if (!subj && dayIdx === 5) return;
+                    rows += `<div class="row break"><span class="time">${period.time}</span><span>${escapeHtml(subj || 'שבת שלום')}</span></div>`;
+                    return;
+                }
+                if (!subj) return;
+                const cellId = cellIdFor(period, dayIdx);
+                const cell = weekData[cellId] || { score: -1 };
+                const score = cell.score;
+                const name = appData.lessonNames?.[cellId] || subj;
+                const stars = (cell.stars || []).length;
+                rows += `<div class="row">
+                    <span class="time">${period.time}</span>
+                    <span class="name">${escapeHtml(name)}</span>
+                    <select data-cell-id="${cellId}" class="${score > -1 ? 's' + score : ''}">
+                        <option value="-1" ${score == -1 ? 'selected' : ''}>—</option>
+                        <option value="0" ${score == 0 ? 'selected' : ''}>0</option>
+                        <option value="1" ${score == 1 ? 'selected' : ''}>1</option>
+                        <option value="2" ${score == 2 ? 'selected' : ''}>2</option>
+                        <option value="3" ${score == 3 ? 'selected' : ''}>3</option>
+                    </select>
+                    <button type="button" class="star ${stars ? 'on' : ''}" data-cell-id="${cellId}">⭐${stars ? stars : ''}</button>
+                </div>`;
+            });
+            root.innerHTML = `<div class="head"><div class="day">${dayNames[dayIdx]}${he ? ' · ' + he.day + ' ' + he.month : ''}</div><div class="pts">${calculateClassPoints()}</div></div>${rows}`;
+            root.querySelectorAll('select').forEach(sel => {
+                sel.addEventListener('change', () => saveCellScore(sel.dataset.cellId, parseInt(sel.value, 10)));
+            });
+            root.querySelectorAll('.star').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    try { window.focus(); } catch (e) {}
+                    openOutstandingModal(btn.dataset.cellId);
+                });
+            });
+        };
+
+        const closeMiniWindow = () => {
+            if (miniWindow && !miniWindow.closed) miniWindow.close();
+            miniWindow = null;
+        };
+
+        const openMiniWindow = async () => {
+            if (miniWindow && !miniWindow.closed) {
+                closeMiniWindow();
+                return;
+            }
+            const width = 300;
+            const height = Math.min(760, screen.availHeight - 80);
+            try {
+                if (window.documentPictureInPicture) {
+                    const pip = await documentPictureInPicture.requestWindow({ width, height });
+                    prepareMiniDoc(pip);
+                    miniWindow = pip;
+                    pip.addEventListener('pagehide', () => { if (miniWindow === pip) miniWindow = null; });
+                    renderMini();
+                    return;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            const pop = window.open('', 'hakoach-mini', `popup=yes,width=${width},height=${height}`);
+            if (!pop) {
+                showToast('הדפדפן חסם את החלונית. אשרו חלונות קופצים, או פתחו ב-Chrome / Edge.');
+                return;
+            }
+            prepareMiniDoc(pop);
+            miniWindow = pop;
+            renderMini();
         };
 
         const fillLessonSelect = (selectEl, preferredCellId) => {
@@ -1295,10 +1235,8 @@
         const logout = () => {
             currentUser = null;
             clearSession();
-            compactMode = false;
-            compactPinned = false;
-            document.body.classList.remove('compact-ui', 'in-class');
-            updateCompactButton();
+            if (miniWindow && !miniWindow.closed) miniWindow.close();
+            miniWindow = null;
             showView('login-page');
             document.getElementById('setup-hint').classList.toggle('hidden', !!appData.setupComplete);
         };
@@ -1387,6 +1325,7 @@
         };
 
         document.getElementById('logout-btn').onclick = logout;
+        document.getElementById('mini-window-btn').onclick = () => openMiniWindow();
         document.getElementById('open-manage-btn').onclick = () => { if (!isHomeroom()) return; renderManage(); showView('manage-panel'); };
         document.getElementById('close-manage-btn').onclick = () => { showView('main-app'); renderAll(); };
         document.getElementById('admin-login-key-btn').onclick = () => {
@@ -1484,6 +1423,7 @@
                 if (box) box.className = `cell-content ${score > -1 ? 'score-' + score : ''}`;
             }
             document.getElementById('total-points-display').textContent = calculateClassPoints();
+            renderMini();
             await updateDB(`weeks.${week}.${cellId}`, appData.weeks[week][cellId]);
         };
         const saveLessonName = (cellId, value) => {
