@@ -193,26 +193,85 @@
         .student-tile-meta { font-size: 0.82em; color: var(--dark-gray); margin-top: 6px; }
         #student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
         .purchase-history-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px dashed #ccc; }
-        .prize-sheet { width: min(1320px, 98vw); max-width: 1320px; max-height: 96vh; padding: 26px 28px 22px; background: linear-gradient(180deg, #fffdf8 0%, #fff 46%); }
-        .prize-sheet h2 { font-size: 2.15em; margin-bottom: 2px; }
-        .prize-lead { text-align: center; margin: 0 0 16px; font-size: 1.35em; font-weight: 800; color: #6d4c41; }
-        .prize-layout { display: grid; grid-template-columns: minmax(280px, 0.9fr) minmax(340px, 1.1fr); gap: 20px; align-items: stretch; }
-        .prize-roster { min-width: 0; }
-        .prize-roster .form-group select { font-size: 1.2em; font-weight: 700; padding: 14px; }
-        .prize-count { margin: 0 0 10px; text-align: center; font-size: 1.15em; font-weight: 800; color: #6d4c41; }
-        #prize-student-list { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; max-height: 58vh; overflow-y: auto; padding: 2px; }
-        #prize-student-list .student-chip { font-size: 1.22em; padding: 12px 16px; min-height: 52px; border-radius: 14px; }
-        #prize-student-list .student-chip.selected { background: #f9a825; color: #3e2723; border-color: #f57f17; box-shadow: 0 0 0 3px rgba(249,168,37,0.4); }
-        .prize-stage { background: radial-gradient(circle at 50% 40%, #fff8e1 0%, #f6f1e6 72%); border: 2px solid rgba(249,168,37,0.4); border-radius: 24px; padding: 14px 12px 18px; display: flex; align-items: center; justify-content: center; }
-        .wheel-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
-        #wheel-canvas { width: min(54vh, 520px); max-width: 100%; height: auto; }
+        .modal-content.prize-sheet, .modal-content.cards-sheet { overflow: hidden; }
+        .prize-sheet, .cards-sheet { width: min(1360px, 98vw); max-width: 1360px; max-height: 96vh; padding: 18px 22px 16px; background: linear-gradient(180deg, #fffdf8 0%, #fff 46%); display: flex; flex-direction: column; }
+        .cards-sheet { max-width: 1080px; background: linear-gradient(180deg, #f4f0ff 0%, #fff 40%); }
+        .prize-sheet h2, .cards-sheet h2 { font-size: 2em; margin-bottom: 2px; }
+        .fs-btn {
+            position: absolute; left: 58px; top: 12px; z-index: 2;
+            background: #fff; border: 2px solid #f9a825; color: #5d4037;
+            border-radius: 10px; padding: 6px 12px; font-weight: 800; cursor: pointer; font-family: var(--font-family);
+        }
+        .cards-sheet .fs-btn { border-color: #5e35b1; color: #4527a0; }
+        .prize-lead { text-align: center; margin: 0 0 10px; font-size: 1.15em; font-weight: 800; color: #6d4c41; }
+        .prize-layout { display: grid; grid-template-columns: minmax(210px, 0.72fr) minmax(420px, 1.28fr); gap: 16px; align-items: stretch; min-height: 0; flex: 1; }
+        .prize-roster { min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+        .prize-roster .form-group { margin-bottom: 8px; }
+        .prize-roster .form-group select { font-size: 1.05em; font-weight: 700; padding: 8px 10px; }
+        .prize-count { margin: 0 0 8px; text-align: center; font-size: 0.98em; font-weight: 800; color: #6d4c41; }
+        #prize-student-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; align-content: start; overflow: visible; padding: 1px; }
+        #prize-student-list .student-chip { font-size: 0.86em; padding: 4px 6px; min-height: 30px; border-radius: 8px; line-height: 1.2; }
+        #prize-student-list .student-chip.selected { background: #f9a825; color: #3e2723; border-color: #f57f17; box-shadow: 0 0 0 2px rgba(249,168,37,0.45); }
+        .prize-stage { background: radial-gradient(circle at 50% 40%, #fff8e1 0%, #f6f1e6 72%); border: 2px solid rgba(249,168,37,0.4); border-radius: 24px; padding: 8px 10px 12px; display: flex; align-items: center; justify-content: center; min-height: 0; }
+        .wheel-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+        #wheel-canvas { width: min(62vh, 620px); max-width: 100%; height: auto; }
         .wheel-pointer { width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 32px solid #d32f2f; margin-bottom: -6px; z-index: 2; filter: drop-shadow(0 2px 1px rgba(0,0,0,.25)); }
-        #wheel-winner { min-height: 2.6em; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #wheel-winner .winner-name { font-size: 2.3em; font-weight: 800; color: #1b5e20; line-height: 1.05; }
-        #wheel-winner .winner-prize { font-size: 1.45em; font-weight: 800; color: #e65100; }
+        #wheel-winner { min-height: 2.2em; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #wheel-winner .winner-name { font-size: 2.1em; font-weight: 800; color: #1b5e20; line-height: 1.05; }
+        #wheel-winner .winner-prize { font-size: 1.35em; font-weight: 800; color: #e65100; }
         #wheel-winner.pop { animation: winnerPop 0.5s ease; }
         @keyframes winnerPop { 0% { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.06); } 100% { transform: scale(1); opacity: 1; } }
-        #spin-wheel-btn { width: min(54vh, 520px); max-width: 100%; background: linear-gradient(135deg, #f9a825, #f57f17); color: #3e2723; font-size: 1.4em; padding: 16px 20px; border-radius: 16px; }
+        #spin-wheel-btn { width: min(62vh, 620px); max-width: 100%; background: linear-gradient(135deg, #f9a825, #f57f17); color: #3e2723; font-size: 1.25em; padding: 12px 16px; border-radius: 16px; }
+        .prize-sheet:fullscreen, .cards-sheet:fullscreen {
+            width: 100vw; height: 100vh; max-width: none; max-height: none; border-radius: 0;
+        }
+        .prize-sheet:fullscreen .prize-layout { grid-template-columns: minmax(280px, 0.62fr) minmax(520px, 1.38fr); }
+        .prize-sheet:fullscreen #wheel-canvas, .prize-sheet:fullscreen #spin-wheel-btn { width: min(78vh, 760px); }
+        .prize-sheet:fullscreen #prize-student-list { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+        #fortune-deck { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 10px; overflow: auto; padding: 4px; min-height: 0; flex: 1; }
+        .deck-card {
+            aspect-ratio: 3 / 4; border: none; border-radius: 12px; cursor: pointer; color: #fff8e1;
+            background:
+                radial-gradient(circle at 50% 46%, #ffd54f 0 14%, transparent 15%),
+                repeating-linear-gradient(135deg, #1a237e 0 7px, #283593 7px 14px);
+            font-family: var(--font-family); font-weight: 800; font-size: 1.7em;
+            box-shadow: 0 8px 16px rgba(26,35,126,0.25);
+        }
+        .deck-card:hover { transform: translateY(-4px); }
+        #fortune-float {
+            position: fixed; z-index: 940; top: 14vh; left: 50%; transform: translateX(-50%);
+            cursor: grab; touch-action: none;
+        }
+        #fortune-float.dragging { cursor: grabbing; animation: none; }
+        #fortune-float:not(.dragging) { animation: cardFloat 3.4s ease-in-out infinite; }
+        @keyframes cardFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
+        .fortune-card { width: 230px; height: 310px; perspective: 900px; }
+        .fortune-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.7s ease; }
+        .fortune-card.is-flipped .fortune-inner { transform: rotateY(180deg); }
+        .fortune-back, .fortune-front {
+            position: absolute; inset: 0; border-radius: 18px; backface-visibility: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+            padding: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.28);
+        }
+        .fortune-back {
+            background:
+                radial-gradient(circle at 50% 42%, #ffd54f 0 18%, transparent 19%),
+                repeating-linear-gradient(135deg, #1a237e 0 10px, #283593 10px 20px);
+            color: #fff8e1;
+        }
+        .fortune-back b { font-size: 1.35em; margin-top: 54px; }
+        .fortune-back button, .fortune-front button {
+            margin-top: 14px; border: none; border-radius: 12px; padding: 10px 12px; width: 100%;
+            font-family: var(--font-family); font-weight: 800; cursor: pointer; font-size: 1em;
+        }
+        .fortune-back button { background: #ffd54f; color: #3e2723; }
+        .fortune-front { background: #fffdf8; transform: rotateY(180deg); color: #3e2723; }
+        #fortune-name { font-family: David, "Times New Roman", serif; font-size: 1.8em; font-weight: 800; color: #1a237e; line-height: 1.15; }
+        .fortune-front p { margin: 8px 0 0; font-size: 0.95em; font-weight: 700; line-height: 1.35; }
+        #fortune-result { min-height: 1.3em; color: #e65100; font-weight: 800; font-size: 1.15em; }
+        .fortune-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+        #fortune-noted-btn { background: #eceff1; color: #37474f; }
+        #fortune-prize-btn { background: #f9a825; color: #3e2723; }
         #confetti-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1300; }
         #install-app-btn {
             display: flex; margin: 18px auto 0; background: linear-gradient(135deg, #1976D2, #0D47A1); color: white;
@@ -258,14 +317,15 @@
             input, select, textarea { font-size: 16px !important; }
             .modal { align-items: flex-end; }
             .modal-content { border-radius: 20px 20px 0 0; width: 100%; max-width: 100%; max-height: 88vh; }
-            #prize-modal.modal { align-items: center; }
-            #prize-modal .prize-sheet { border-radius: 20px; max-height: 94vh; padding: 18px 14px 16px; }
+            #prize-modal.modal, #cards-modal.modal { align-items: center; }
+            #prize-modal .prize-sheet, #cards-modal .cards-sheet { border-radius: 20px; max-height: 94vh; padding: 18px 14px 16px; }
             .prize-layout { grid-template-columns: 1fr; }
-            .prize-sheet h2 { font-size: 1.6em; }
-            .prize-lead { font-size: 1.05em; }
-            #prize-student-list { max-height: 28vh; }
-            #wheel-canvas, #spin-wheel-btn { width: min(72vw, 340px); }
-            #wheel-winner .winner-name { font-size: 1.7em; }
+            .prize-sheet h2, .cards-sheet h2 { font-size: 1.5em; }
+            .prize-lead { font-size: 0.95em; }
+            #prize-student-list { max-height: 24vh; overflow: auto; }
+            #wheel-canvas, #spin-wheel-btn { width: min(70vw, 320px); }
+            #wheel-winner .winner-name { font-size: 1.6em; }
+            #fortune-deck { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
             #student-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
         }
         @media (min-width: 769px) {
@@ -386,6 +446,7 @@
                 </div>
                 <div class="header-actions-row">
                     <button type="button" id="parent-note-btn" class="utility-btn success">הערה להורים</button>
+                    <button type="button" id="cards-btn" class="utility-btn" style="background:#5e35b1;">קלפי המזל</button>
                     <button type="button" id="prize-btn" class="utility-btn gold">גלגל המזל</button>
                 </div>
             </div>
@@ -451,6 +512,26 @@
                 <button type="submit" class="utility-btn">הוסף פריט</button>
             </form>
             <ul id="store-manage-list" class="admin-list"></ul>
+        </div>
+    </div>
+
+    <div id="fortune-float" class="hidden">
+        <div class="fortune-card" id="fortune-card-face">
+            <div class="fortune-inner">
+                <div class="fortune-back">
+                    <b>קלף המזל</b>
+                    <button type="button" id="fortune-flip-btn">הפוך בסוף השיעור</button>
+                </div>
+                <div class="fortune-front">
+                    <span id="fortune-name"></span>
+                    <p>אם לא הערת אפילו פעם אחת בשיעור — מגיע צ'ופר</p>
+                    <div id="fortune-result"></div>
+                    <div class="fortune-actions">
+                        <button type="button" id="fortune-noted-btn">הערתי בשיעור</button>
+                        <button type="button" id="fortune-prize-btn">לא הערתי — צ'ופר</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -703,6 +784,7 @@
         const openModal = (id) => document.getElementById(id)?.classList.add('show');
         const closeModal = (el) => {
             const m = typeof el === 'string' ? document.getElementById(el) : el?.closest?.('.modal');
+            if (document.fullscreenElement && m?.contains(document.fullscreenElement)) document.exitFullscreen();
             m?.classList.remove('show');
         };
         const isHomeroom = () => currentUser?.role === 'homeroom' || currentUser?.role === 'admin';
@@ -712,7 +794,8 @@
             <div class="modal" id="store-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>חנות כיתתית</h2><p id="store-header"></p><div id="store-items"></div></div></div>
             <div class="modal" id="history-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>היסטוריית רכישות</h2><div id="purchase-history-list"></div></div></div>
             <div class="modal" id="student-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2 id="student-modal-name"></h2><div id="student-modal-body"></div></div></div>
-            <div class="modal" id="prize-modal"><div class="modal-content prize-sheet"><span class="close-btn">&times;</span>
+            <div class="modal" id="prize-modal"><div class="modal-content prize-sheet" id="prize-sheet"><span class="close-btn">&times;</span>
+                <button type="button" id="prize-fullscreen-btn" class="fs-btn">מסך מלא</button>
                 <h2>גלגל המזל</h2>
                 <p class="prize-lead">מי שעולה בגלגל מקבל צ'ופר</p>
                 <div class="prize-layout">
@@ -731,6 +814,13 @@
                     </div>
                 </div>
                 <canvas id="confetti-canvas"></canvas>
+            </div></div>
+            <div class="modal" id="cards-modal"><div class="modal-content cards-sheet" id="cards-sheet"><span class="close-btn">&times;</span>
+                <button type="button" id="cards-fullscreen-btn" class="fs-btn">מסך מלא</button>
+                <h2>קלפי המזל</h2>
+                <p class="prize-lead">בוחרים קלף הפוך בתחילת השיעור. בסוף הופכים אותו. אם לא הערתם לתלמיד אפילו פעם אחת — מגיע צ'ופר.</p>
+                <p class="prize-count" id="fortune-status"></p>
+                <div id="fortune-deck"></div>
             </div></div>
             <div class="modal" id="note-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>הערה להורים</h2>
                 <div class="form-group"><label>תלמיד/ה</label><select id="note-student-select"></select></div>
@@ -1337,6 +1427,83 @@
             requestAnimationFrame(animate);
         };
 
+        const bindFullscreen = (btnId, targetId) => {
+            const btn = document.getElementById(btnId);
+            const target = document.getElementById(targetId);
+            const sync = () => { btn.textContent = document.fullscreenElement === target ? 'צא ממסך מלא' : 'מסך מלא'; };
+            btn.onclick = () => {
+                if (document.fullscreenElement === target) document.exitFullscreen();
+                else target.requestFullscreen();
+            };
+            document.addEventListener('fullscreenchange', sync);
+        };
+        bindFullscreen('prize-fullscreen-btn', 'prize-sheet');
+        bindFullscreen('cards-fullscreen-btn', 'cards-sheet');
+
+        const FORTUNE_KEY = 'hakoachFortuneCard';
+        let fortuneCard = null;
+        const readFortune = () => {
+            try { return JSON.parse(sessionStorage.getItem(FORTUNE_KEY) || 'null'); }
+            catch { return null; }
+        };
+        const writeFortune = (card) => {
+            if (!card) sessionStorage.removeItem(FORTUNE_KEY);
+            else sessionStorage.setItem(FORTUNE_KEY, JSON.stringify(card));
+        };
+        const renderFortuneFloat = () => {
+            const el = document.getElementById('fortune-float');
+            const face = document.getElementById('fortune-card-face');
+            if (!fortuneCard) { el.classList.add('hidden'); return; }
+            el.classList.remove('hidden');
+            face.classList.toggle('is-flipped', !!fortuneCard.revealed);
+            document.getElementById('fortune-name').textContent = fortuneCard.revealed ? fortuneCard.name : '';
+            document.getElementById('fortune-result').textContent = '';
+            document.querySelector('#fortune-float .fortune-actions').classList.remove('hidden');
+        };
+        const restoreFortune = () => {
+            const saved = readFortune();
+            const student = saved && (appData.students || []).find(s => s.id === saved.id);
+            fortuneCard = student ? { id: student.id, name: student.name, revealed: !!saved.revealed } : null;
+            if (saved && !student) writeFortune(null);
+            renderFortuneFloat();
+        };
+        const shuffleStudents = (list) => {
+            const a = list.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(secureRandom() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        };
+        const openCardsModal = () => {
+            const students = shuffleStudents(appData.students || []);
+            document.getElementById('fortune-status').textContent = fortuneCard
+                ? 'יש כבר קלף מרחף מעל הטבלה. בחירה חדשה מחליפה אותו.'
+                : 'כל הקלפים הפוכים. לחצו על אחד מהם.';
+            document.getElementById('fortune-deck').innerHTML = students.map(() =>
+                `<button type="button" class="deck-card" data-id="">?</button>`
+            ).join('') || '<p>אין תלמידים עדיין. הוסיפו תלמידים בניהול הכיתה.</p>';
+            document.querySelectorAll('#fortune-deck .deck-card').forEach((btn, i) => { btn.dataset.id = students[i].id; });
+            openModal('cards-modal');
+        };
+        const chooseFortuneCard = async (id) => {
+            const student = (appData.students || []).find(s => s.id === id);
+            if (!student) return;
+            if (document.fullscreenElement) await document.exitFullscreen();
+            fortuneCard = { id: student.id, name: student.name, revealed: false };
+            writeFortune(fortuneCard);
+            document.getElementById('fortune-float').style.left = '';
+            document.getElementById('fortune-float').style.top = '';
+            document.getElementById('fortune-float').style.transform = '';
+            renderFortuneFloat();
+            closeModal('cards-modal');
+        };
+        const clearFortune = () => {
+            fortuneCard = null;
+            writeFortune(null);
+            renderFortuneFloat();
+        };
+
         const openNoteModal = () => {
             const students = [...(appData.students || [])].sort((a,b) => a.name.localeCompare(b.name, 'he'));
             const templates = appData.noteTemplates || [];
@@ -1482,6 +1649,7 @@
             if (!appData.currentWeek) appData.currentWeek = sys.week;
             showView('main-app');
             renderAll();
+            restoreFortune();
         };
 
         const logout = () => {
@@ -1490,6 +1658,7 @@
             if (miniWindow && !miniWindow.closed) miniWindow.close();
             miniWindow = null;
             setFloatMode(false);
+            document.getElementById('fortune-float')?.classList.add('hidden');
             showView('login-page');
             document.getElementById('setup-hint').classList.toggle('hidden', !!appData.setupComplete);
         };
@@ -1751,6 +1920,57 @@
             if (wheelSpinning || !document.getElementById('prize-modal')?.classList.contains('show')) return;
             redrawWheel();
         });
+        document.addEventListener('fullscreenchange', () => {
+            if (wheelSpinning || !document.getElementById('prize-modal')?.classList.contains('show')) return;
+            requestAnimationFrame(redrawWheel);
+        });
+
+        document.getElementById('cards-btn').onclick = openCardsModal;
+        document.getElementById('fortune-deck').onclick = (e) => {
+            const card = e.target.closest('.deck-card');
+            if (card) chooseFortuneCard(card.dataset.id);
+        };
+        document.getElementById('fortune-flip-btn').onclick = () => {
+            if (!fortuneCard) return;
+            fortuneCard.revealed = true;
+            writeFortune(fortuneCard);
+            renderFortuneFloat();
+        };
+        document.getElementById('fortune-noted-btn').onclick = () => {
+            clearFortune();
+            showToast('נרשם. אין צ\'ופר הפעם.', true);
+        };
+        document.getElementById('fortune-prize-btn').onclick = () => {
+            if (!fortuneCard?.revealed) return;
+            primeFanfare();
+            document.getElementById('fortune-result').textContent = 'מקבל צ\'ופר!';
+            document.querySelector('#fortune-float .fortune-actions').classList.add('hidden');
+            launchConfetti();
+            playFanfare();
+            const name = fortuneCard.name;
+            document.getElementById('fortune-name').textContent = name;
+            setTimeout(clearFortune, 3200);
+        };
+        (() => {
+            const floater = document.getElementById('fortune-float');
+            let drag = null;
+            floater.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('button')) return;
+                const rect = floater.getBoundingClientRect();
+                drag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+                floater.classList.add('dragging');
+                floater.setPointerCapture(e.pointerId);
+            });
+            floater.addEventListener('pointermove', (e) => {
+                if (!drag) return;
+                floater.style.left = (e.clientX - drag.dx) + 'px';
+                floater.style.top = (e.clientY - drag.dy) + 'px';
+                floater.style.transform = 'none';
+            });
+            const endDrag = () => { drag = null; floater.classList.remove('dragging'); };
+            floater.addEventListener('pointerup', endDrag);
+            floater.addEventListener('pointercancel', endDrag);
+        })();
 
         document.getElementById('parent-note-btn').onclick = openNoteModal;
         document.getElementById('note-template-select').onchange = applyNoteTemplate;
