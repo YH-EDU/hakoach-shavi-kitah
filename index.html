@@ -193,10 +193,27 @@
         .student-tile-meta { font-size: 0.82em; color: var(--dark-gray); margin-top: 6px; }
         #student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
         .purchase-history-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px dashed #ccc; }
-        .wheel-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-        #wheel-canvas { max-width: 100%; height: auto; }
-        .wheel-pointer { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 24px solid #d32f2f; margin-bottom: -8px; z-index: 2; }
-        #wheel-winner { font-size: 1.4em; font-weight: 800; color: var(--success-color); min-height: 1.6em; text-align: center; }
+        .prize-sheet { width: min(1320px, 98vw); max-width: 1320px; max-height: 96vh; padding: 26px 28px 22px; background: linear-gradient(180deg, #fffdf8 0%, #fff 46%); }
+        .prize-sheet h2 { font-size: 2.15em; margin-bottom: 2px; }
+        .prize-lead { text-align: center; margin: 0 0 16px; font-size: 1.35em; font-weight: 800; color: #6d4c41; }
+        .prize-layout { display: grid; grid-template-columns: minmax(280px, 0.9fr) minmax(340px, 1.1fr); gap: 20px; align-items: stretch; }
+        .prize-roster { min-width: 0; }
+        .prize-roster .form-group select { font-size: 1.2em; font-weight: 700; padding: 14px; }
+        .prize-count { margin: 0 0 10px; text-align: center; font-size: 1.15em; font-weight: 800; color: #6d4c41; }
+        #prize-student-list { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; max-height: 58vh; overflow-y: auto; padding: 2px; }
+        #prize-student-list .student-chip { font-size: 1.22em; padding: 12px 16px; min-height: 52px; border-radius: 14px; }
+        #prize-student-list .student-chip.selected { background: #f9a825; color: #3e2723; border-color: #f57f17; box-shadow: 0 0 0 3px rgba(249,168,37,0.4); }
+        .prize-stage { background: radial-gradient(circle at 50% 40%, #fff8e1 0%, #f6f1e6 72%); border: 2px solid rgba(249,168,37,0.4); border-radius: 24px; padding: 14px 12px 18px; display: flex; align-items: center; justify-content: center; }
+        .wheel-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+        #wheel-canvas { width: min(54vh, 520px); max-width: 100%; height: auto; }
+        .wheel-pointer { width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 32px solid #d32f2f; margin-bottom: -6px; z-index: 2; filter: drop-shadow(0 2px 1px rgba(0,0,0,.25)); }
+        #wheel-winner { min-height: 2.6em; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #wheel-winner .winner-name { font-size: 2.3em; font-weight: 800; color: #1b5e20; line-height: 1.05; }
+        #wheel-winner .winner-prize { font-size: 1.45em; font-weight: 800; color: #e65100; }
+        #wheel-winner.pop { animation: winnerPop 0.5s ease; }
+        @keyframes winnerPop { 0% { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.06); } 100% { transform: scale(1); opacity: 1; } }
+        #spin-wheel-btn { width: min(54vh, 520px); max-width: 100%; background: linear-gradient(135deg, #f9a825, #f57f17); color: #3e2723; font-size: 1.4em; padding: 16px 20px; border-radius: 16px; }
+        #confetti-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1300; }
         #install-app-btn {
             display: flex; margin: 18px auto 0; background: linear-gradient(135deg, #1976D2, #0D47A1); color: white;
             border: none; padding: 14px 28px; border-radius: 30px; font-weight: 700; cursor: pointer; font-size: 1.05em;
@@ -241,6 +258,14 @@
             input, select, textarea { font-size: 16px !important; }
             .modal { align-items: flex-end; }
             .modal-content { border-radius: 20px 20px 0 0; width: 100%; max-width: 100%; max-height: 88vh; }
+            #prize-modal.modal { align-items: center; }
+            #prize-modal .prize-sheet { border-radius: 20px; max-height: 94vh; padding: 18px 14px 16px; }
+            .prize-layout { grid-template-columns: 1fr; }
+            .prize-sheet h2 { font-size: 1.6em; }
+            .prize-lead { font-size: 1.05em; }
+            #prize-student-list { max-height: 28vh; }
+            #wheel-canvas, #spin-wheel-btn { width: min(72vw, 340px); }
+            #wheel-winner .winner-name { font-size: 1.7em; }
             #student-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
         }
         @media (min-width: 769px) {
@@ -361,8 +386,7 @@
                 </div>
                 <div class="header-actions-row">
                     <button type="button" id="parent-note-btn" class="utility-btn success">הערה להורים</button>
-                    <button type="button" id="outstanding-btn" class="utility-btn" style="background:#009688;">מצטייני שיעור</button>
-                    <button type="button" id="wheel-btn" class="utility-btn gold">גלגל מזל</button>
+                    <button type="button" id="prize-btn" class="utility-btn gold">גלגל המזל</button>
                 </div>
             </div>
             <div id="float-note">
@@ -502,9 +526,14 @@
         let currentUser = null;
         let miniWindow = null;
         let mobileDayIndex = -1;
-        let outstandingContext = { week: null, cellId: null };
+        let wheelIds = [];
         let wheelNames = [];
         let wheelSpinning = false;
+        let wheelRotation = 0;
+        let wheelHighlight = -1;
+        let confettiFrame = 0;
+        let fanfareCtx = null;
+        let prizeWrite = Promise.resolve();
 
         const days = ['שעה', 'ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
         const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
@@ -683,27 +712,25 @@
             <div class="modal" id="store-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>חנות כיתתית</h2><p id="store-header"></p><div id="store-items"></div></div></div>
             <div class="modal" id="history-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>היסטוריית רכישות</h2><div id="purchase-history-list"></div></div></div>
             <div class="modal" id="student-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2 id="student-modal-name"></h2><div id="student-modal-body"></div></div></div>
-            <div class="modal" id="outstanding-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>מצטייני שיעור</h2>
-                <div class="form-group"><label>שיעור</label><select id="outstanding-lesson-select"></select></div>
-                <p>בחרו תלמידים מצטיינים בשיעור זה (בלי נקודות אישיות):</p>
-                <div id="student-chip-list"></div>
-                <button type="button" id="save-outstanding-btn" class="modal-btn" style="margin-top:16px;background:var(--success-color);">שמור מצטיינים</button>
-            </div></div>
-            <div class="modal" id="wheel-modal"><div class="modal-content" style="max-width:520px;"><span class="close-btn">&times;</span><h2>גלגל המזל</h2>
-                <div class="form-group"><label>ממי להגריל</label>
-                    <select id="wheel-source">
-                        <option value="lesson">מצטייני השיעור שנבחר</option>
-                        <option value="today">כל מצטייני היום</option>
-                        <option value="all">כל תלמידי הכיתה</option>
-                    </select>
+            <div class="modal" id="prize-modal"><div class="modal-content prize-sheet"><span class="close-btn">&times;</span>
+                <h2>גלגל המזל</h2>
+                <p class="prize-lead">מי שעולה בגלגל מקבל צ'ופר</p>
+                <div class="prize-layout">
+                    <div class="prize-roster">
+                        <div class="form-group"><label>שיעור</label><select id="prize-lesson-select"></select></div>
+                        <p class="prize-count" id="prize-count">לחצו על תלמיד כדי להוסיף אותו לגלגל</p>
+                        <div id="prize-student-list"></div>
+                    </div>
+                    <div class="prize-stage">
+                        <div class="wheel-wrap">
+                            <div class="wheel-pointer"></div>
+                            <canvas id="wheel-canvas" width="640" height="640"></canvas>
+                            <div id="wheel-winner"></div>
+                            <button type="button" id="spin-wheel-btn" class="modal-btn">סובב את הגלגל</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group" id="wheel-lesson-wrap"><label>שיעור להגרלה</label><select id="wheel-lesson-select"></select></div>
-                <div class="wheel-wrap">
-                    <div class="wheel-pointer"></div>
-                    <canvas id="wheel-canvas" width="360" height="360"></canvas>
-                    <div id="wheel-winner"></div>
-                    <button type="button" id="spin-wheel-btn" class="modal-btn" style="background:#f9a825;color:#333;">סובב את הגלגל</button>
-                </div>
+                <canvas id="confetti-canvas"></canvas>
             </div></div>
             <div class="modal" id="note-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>הערה להורים</h2>
                 <div class="form-group"><label>תלמיד/ה</label><select id="note-student-select"></select></div>
@@ -828,7 +855,7 @@
                     rows += `<td class="day-col col-${col} ${hl} ${tone}"><div class="cell-content ${scoreClass}" data-cell-id="${cellId}">
                         <input class="lesson-name-input" data-id="${cellId}" value="${escapeHtml(lessonName)}" ${nameLock} title="עריכת שם השיעור" autocomplete="off">
                         ${scoreSelectHtml(cellId, cell.score, 'point-select')}
-                        <button type="button" class="star-lesson-btn ${starCount ? 'has-stars' : ''}" data-cell-id="${cellId}" title="מצטיינים בשיעור">⭐${starCount ? starCount : ''}</button>
+                        <button type="button" class="star-lesson-btn ${starCount ? 'has-stars' : ''}" data-cell-id="${cellId}" title="גלגל המזל לשיעור">⭐${starCount ? starCount : ''}</button>
                     </div></td>`;
                 }
                 rows += `</tr>`;
@@ -1029,121 +1056,280 @@
             selectEl.innerHTML = opts.map(o => `<option value="${o.cellId}" ${o.cellId === preferredCellId ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('');
         };
 
-        const openOutstandingModal = (cellId) => {
-            outstandingContext = { week: appData.currentWeek, cellId: cellId || null };
-            fillLessonSelect(document.getElementById('outstanding-lesson-select'), cellId);
-            if (!outstandingContext.cellId) outstandingContext.cellId = document.getElementById('outstanding-lesson-select').value;
-            const selected = new Set(starsForCell(outstandingContext.week, outstandingContext.cellId));
-            const students = [...(appData.students || [])].sort((a,b) => a.name.localeCompare(b.name, 'he'));
-            document.getElementById('student-chip-list').innerHTML = students.map(s =>
-                `<button type="button" class="student-chip ${selected.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
-            ).join('') || '<p>אין תלמידים עדיין. הוסיפו תלמידים בניהול הכיתה.</p>';
-            openModal('outstanding-modal');
-        };
-
         const secureRandom = () => {
             const buf = new Uint32Array(1);
             crypto.getRandomValues(buf);
             return buf[0] / 4294967296;
         };
 
+        const wheelLabel = (name, names) => {
+            const first = String(name).split(' ')[0];
+            const dup = names.filter(n => String(n).split(' ')[0] === first).length > 1;
+            if (!dup) return first;
+            const rest = String(name).split(' ').slice(1).join(' ');
+            return rest ? `${first} ${rest[0]}.` : first;
+        };
+
+        const fitWheelCanvas = () => {
+            const canvas = document.getElementById('wheel-canvas');
+            const display = Math.round(canvas.getBoundingClientRect().width) || 420;
+            const dpr = Math.min(2, window.devicePixelRatio || 1);
+            const size = Math.max(320, display) * dpr;
+            if (canvas.width !== size) {
+                canvas.width = size;
+                canvas.height = size;
+            }
+        };
+
         const drawWheel = (names, rotation = 0, highlight = -1) => {
+            wheelRotation = rotation;
+            wheelHighlight = highlight;
             const canvas = document.getElementById('wheel-canvas');
             const ctx = canvas.getContext('2d');
             const size = canvas.width;
-            const cx = size / 2, cy = size / 2, r = size / 2 - 8;
+            const cx = size / 2, cy = size / 2, r = size / 2 - size * 0.02;
             ctx.clearRect(0, 0, size, size);
             if (!names.length) {
-                ctx.fillStyle = '#999';
-                ctx.font = '20px Assistant';
+                ctx.fillStyle = '#8d6e63';
+                ctx.font = `700 ${Math.round(size * 0.045)}px Assistant`;
                 ctx.textAlign = 'center';
-                ctx.fillText('אין תלמידים להגרלה', cx, cy);
+                ctx.fillText('לחצו על תלמידים', cx, cy - size * 0.02);
+                ctx.fillText('כדי להוסיף אותם לגלגל', cx, cy + size * 0.045);
                 return;
             }
             const pal = ['#1976D2','#009688','#f9a825','#7b1fa2','#d32f2f','#388e3c','#0288d1','#ef6c00'];
             const arc = (Math.PI * 2) / names.length;
+            const fontPx = Math.min(size * 0.05, Math.max(size * 0.028, (size * 0.52) / names.length));
             names.forEach((name, i) => {
                 const start = rotation + i * arc - Math.PI / 2;
                 ctx.beginPath();
                 ctx.moveTo(cx, cy);
                 ctx.arc(cx, cy, r, start, start + arc);
                 ctx.closePath();
-                ctx.fillStyle = pal[i % pal.length];
-                if (i === highlight) ctx.fillStyle = '#ffd54f';
+                ctx.fillStyle = i === highlight ? '#ffd54f' : pal[i % pal.length];
                 ctx.fill();
                 ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = Math.max(3, size * 0.006);
                 ctx.stroke();
                 ctx.save();
                 ctx.translate(cx, cy);
                 ctx.rotate(start + arc / 2);
-                ctx.fillStyle = '#fff';
-                ctx.font = `bold ${Math.min(18, 220 / names.length)}px Assistant`;
+                ctx.fillStyle = i === highlight ? '#3e2723' : '#fff';
+                ctx.font = `800 ${fontPx}px Assistant`;
                 ctx.textAlign = 'right';
-                ctx.fillText(name.split(' ')[0], r - 14, 6);
+                ctx.fillText(wheelLabel(name, names), r - size * 0.04, fontPx * 0.32);
                 ctx.restore();
             });
             ctx.beginPath();
-            ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+            ctx.arc(cx, cy, size * 0.075, 0, Math.PI * 2);
             ctx.fillStyle = '#fff';
             ctx.fill();
-            ctx.strokeStyle = '#1976D2';
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#f9a825';
+            ctx.lineWidth = Math.max(5, size * 0.012);
             ctx.stroke();
         };
 
-        const namesForWheel = () => {
-            const source = document.getElementById('wheel-source').value;
-            const students = appData.students || [];
-            const byId = id => students.find(s => s.id === id)?.name;
-            if (source === 'all') return students.map(s => s.name).filter(Boolean);
-            if (source === 'today') {
-                const week = appData.currentWeek;
-                const dayIdx = getMobileDayIndex();
-                const ids = new Set();
-                Object.entries(appData.weeks?.[week] || {}).forEach(([cellId, cell]) => {
-                    if (cellId.endsWith('-' + dayIdx)) (cell.stars || []).forEach(id => ids.add(id));
-                });
-                return [...ids].map(byId).filter(Boolean);
-            }
-            const cellId = document.getElementById('wheel-lesson-select').value;
-            return starsForCell(appData.currentWeek, cellId).map(byId).filter(Boolean);
+        const redrawWheel = () => {
+            fitWheelCanvas();
+            drawWheel(wheelNames, wheelRotation, wheelHighlight);
         };
 
-        const openWheelModal = () => {
-            fillLessonSelect(document.getElementById('wheel-lesson-select'));
-            document.getElementById('wheel-winner').textContent = '';
-            wheelNames = namesForWheel();
-            drawWheel(wheelNames);
-            openModal('wheel-modal');
+        const updatePrizeCount = () => {
+            const n = wheelNames.length;
+            document.getElementById('prize-count').textContent = n
+                ? (n === 1 ? 'בגלגל: תלמיד אחד' : `בגלגל: ${n} תלמידים`)
+                : 'לחצו על תלמיד כדי להוסיף אותו לגלגל';
+        };
+
+        const renderPrizeStudents = () => {
+            const students = [...(appData.students || [])].sort((a, b) => a.name.localeCompare(b.name, 'he'));
+            const onWheel = new Set(wheelIds);
+            document.getElementById('prize-student-list').innerHTML = students.map(s =>
+                `<button type="button" class="student-chip ${onWheel.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
+            ).join('') || '<p>אין תלמידים עדיין. הוסיפו תלמידים בניהול הכיתה.</p>';
+            updatePrizeCount();
+        };
+
+        const loadLessonOntoWheel = (cellId) => {
+            const saved = new Set(starsForCell(appData.currentWeek, cellId));
+            const students = [...(appData.students || [])].sort((a, b) => a.name.localeCompare(b.name, 'he'));
+            wheelIds = students.filter(s => saved.has(s.id)).map(s => s.id);
+            wheelNames = wheelIds.map(id => students.find(s => s.id === id)?.name).filter(Boolean);
+            wheelRotation = 0;
+            wheelHighlight = -1;
+            renderPrizeStudents();
+        };
+
+        const clearWinner = () => {
+            const el = document.getElementById('wheel-winner');
+            el.innerHTML = '';
+            el.classList.remove('pop');
+        };
+
+        const persistPrize = (cellId, ids) => {
+            const week = appData.currentWeek;
+            const stars = [...ids];
+            if (!appData.weeks[week]) appData.weeks[week] = {};
+            if (!appData.weeks[week][cellId]) appData.weeks[week][cellId] = { score: -1, stars: [] };
+            appData.weeks[week][cellId].stars = stars;
+            const sel = document.getElementById('prize-lesson-select');
+            const lessonLabel = sel?.selectedOptions?.[0]?.textContent || cellId;
+            appData.outstanding = [
+                ...(appData.outstanding || []).filter(o => !(o.week === week && o.cellId === cellId)),
+                ...stars.map(studentId => ({
+                    id: uid(), studentId, week, cellId, lessonName: lessonLabel,
+                    teacherId: currentUser.id, teacherName: currentUser.name, date: new Date().toISOString()
+                }))
+            ].slice(-400);
+            const payload = {
+                [`weeks.${week}.${cellId}`]: appData.weeks[week][cellId],
+                outstanding: appData.outstanding
+            };
+            prizeWrite = prizeWrite.then(() => dbRef.update(payload)).catch(e => {
+                console.error(e);
+                showToast('שגיאה בשמירה. בדקו חיבור לאינטרנט.');
+            });
+            renderTable();
+            renderMobileDayView();
+        };
+
+        const openPrizeModal = (cellId) => {
+            const select = document.getElementById('prize-lesson-select');
+            fillLessonSelect(select, cellId);
+            if (!select.value && select.options.length) select.selectedIndex = 0;
+            loadLessonOntoWheel(select.value);
+            clearWinner();
+            openModal('prize-modal');
+            requestAnimationFrame(() => requestAnimationFrame(redrawWheel));
+        };
+
+        const launchConfetti = () => {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            const dpr = Math.min(2, window.devicePixelRatio || 1);
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            const colors = ['#f9a825', '#d32f2f', '#1976D2', '#388e3c', '#7b1fa2', '#ffca28', '#009688', '#ff7043'];
+            const parts = [];
+            [0.18, 0.5, 0.82].forEach(origin => {
+                for (let i = 0; i < 55; i++) {
+                    parts.push({
+                        x: w * origin,
+                        y: h * 0.28,
+                        vx: (Math.random() - 0.5) * 18,
+                        vy: -Math.random() * 16 - 5,
+                        g: 0.26 + Math.random() * 0.14,
+                        s: 7 + Math.random() * 9,
+                        rot: Math.random() * 6,
+                        vr: (Math.random() - 0.5) * 0.28,
+                        color: colors[i % colors.length]
+                    });
+                }
+            });
+            const start = performance.now();
+            const tick = (now) => {
+                ctx.clearRect(0, 0, w, h);
+                parts.forEach(p => {
+                    p.vy += p.g;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.rot += p.vr;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rot);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.s / 2, -p.s / 3, p.s, p.s * 0.62);
+                    ctx.restore();
+                });
+                if (now - start < 3400) confettiFrame = requestAnimationFrame(tick);
+                else ctx.clearRect(0, 0, w, h);
+            };
+            cancelAnimationFrame(confettiFrame);
+            confettiFrame = requestAnimationFrame(tick);
+        };
+
+        const primeFanfare = () => {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            if (!fanfareCtx) fanfareCtx = new AudioCtx();
+            if (fanfareCtx.state === 'suspended') fanfareCtx.resume();
+        };
+
+        const playFanfare = () => {
+            if (!fanfareCtx) return;
+            const ctx = fanfareCtx;
+            const startAt = ctx.currentTime + 0.02;
+            const melody = [523.25, 659.25, 783.99, 1046.5];
+            melody.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                const t = startAt + i * 0.14;
+                gain.gain.setValueAtTime(0.0001, t);
+                gain.gain.exponentialRampToValueAtTime(0.22, t + 0.03);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+                osc.start(t);
+                osc.stop(t + 0.58);
+            });
+            [523.25, 659.25, 783.99, 1046.5].forEach(freq => {
+                const osc = ctx.createOscillator();
+                const filter = ctx.createBiquadFilter();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.value = freq;
+                filter.type = 'lowpass';
+                filter.frequency.value = 1600;
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                const t = startAt + 0.52;
+                gain.gain.setValueAtTime(0.0001, t);
+                gain.gain.exponentialRampToValueAtTime(0.055, t + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.35);
+                osc.start(t);
+                osc.stop(t + 1.4);
+            });
         };
 
         const spinWheel = () => {
             if (wheelSpinning) return;
-            wheelNames = namesForWheel();
             if (wheelNames.length < 2) {
-                showToast('צריך לפחות שני תלמידים להגרלה אקראית.');
+                showToast('צריך לפחות שני תלמידים על הגלגל.');
                 return;
             }
+            primeFanfare();
             wheelSpinning = true;
+            wheelHighlight = -1;
             document.getElementById('spin-wheel-btn').disabled = true;
-            document.getElementById('wheel-winner').textContent = '';
-            const winnerIndex = Math.floor(secureRandom() * wheelNames.length);
-            const arc = 360 / wheelNames.length;
-            const extraTurns = 6 + Math.floor(secureRandom() * 4);
-            const jitter = (secureRandom() - 0.5) * (arc * 0.7);
+            clearWinner();
+            const names = wheelNames.slice();
+            const winnerIndex = Math.floor(secureRandom() * names.length);
+            const arc = 360 / names.length;
+            const extraTurns = 6 + Math.floor(secureRandom() * 3);
+            const jitter = (secureRandom() - 0.5) * (arc * 0.65);
             const targetDeg = extraTurns * 360 + (360 - (winnerIndex * arc + arc / 2)) + jitter;
             const start = performance.now();
-            const duration = 4200 + secureRandom() * 800;
+            const duration = 4600 + secureRandom() * 700;
             const animate = (now) => {
                 const t = Math.min(1, (now - start) / duration);
                 const eased = 1 - Math.pow(1 - t, 3);
-                const deg = targetDeg * eased;
-                drawWheel(wheelNames, deg * Math.PI / 180);
+                drawWheel(names, targetDeg * eased * Math.PI / 180);
                 if (t < 1) requestAnimationFrame(animate);
                 else {
-                    drawWheel(wheelNames, targetDeg * Math.PI / 180, winnerIndex);
-                    document.getElementById('wheel-winner').textContent = 'הזוכה: ' + wheelNames[winnerIndex];
+                    drawWheel(names, targetDeg * Math.PI / 180, winnerIndex);
+                    const el = document.getElementById('wheel-winner');
+                    el.innerHTML = `<span class="winner-name">${escapeHtml(names[winnerIndex])}</span><span class="winner-prize">מקבל צ'ופר!</span>`;
+                    el.classList.remove('pop');
+                    void el.offsetWidth;
+                    el.classList.add('pop');
+                    launchConfetti();
+                    playFanfare();
                     wheelSpinning = false;
                     document.getElementById('spin-wheel-btn').disabled = false;
                 }
@@ -1523,7 +1709,7 @@
         });
         document.getElementById('class-table-wrapper').addEventListener('click', (e) => {
             const btn = e.target.closest('.star-lesson-btn');
-            if (btn) openOutstandingModal(btn.dataset.cellId);
+            if (btn) openPrizeModal(btn.dataset.cellId);
         });
         document.getElementById('mobile-lessons-container').addEventListener('change', async (e) => {
             const cellId = e.target.dataset.cellId;
@@ -1533,47 +1719,38 @@
         });
         document.getElementById('mobile-lessons-container').addEventListener('click', (e) => {
             const btn = e.target.closest('.star-lesson-btn');
-            if (btn) openOutstandingModal(btn.dataset.cellId);
+            if (btn) openPrizeModal(btn.dataset.cellId);
         });
 
-        document.getElementById('outstanding-btn').onclick = () => openOutstandingModal();
-        document.getElementById('outstanding-lesson-select').onchange = () => openOutstandingModal(document.getElementById('outstanding-lesson-select').value);
-        document.getElementById('student-chip-list').onclick = (e) => {
+        document.getElementById('prize-btn').onclick = () => openPrizeModal();
+        document.getElementById('prize-lesson-select').onchange = () => {
+            if (wheelSpinning) return;
+            loadLessonOntoWheel(document.getElementById('prize-lesson-select').value);
+            clearWinner();
+            redrawWheel();
+        };
+        document.getElementById('prize-student-list').onclick = (e) => {
             const btn = e.target.closest('.student-chip');
-            if (btn) btn.classList.toggle('selected');
+            if (!btn || wheelSpinning) return;
+            const id = btn.dataset.id;
+            const cellId = document.getElementById('prize-lesson-select').value;
+            if (!cellId) return;
+            const students = appData.students || [];
+            if (wheelIds.includes(id)) wheelIds = wheelIds.filter(x => x !== id);
+            else wheelIds.push(id);
+            wheelNames = wheelIds.map(sid => students.find(s => s.id === sid)?.name).filter(Boolean);
+            wheelRotation = 0;
+            wheelHighlight = -1;
+            renderPrizeStudents();
+            clearWinner();
+            redrawWheel();
+            persistPrize(cellId, wheelIds);
         };
-        document.getElementById('save-outstanding-btn').onclick = async () => {
-            const cellId = document.getElementById('outstanding-lesson-select').value;
-            const week = appData.currentWeek;
-            const ids = [...document.querySelectorAll('#student-chip-list .student-chip.selected')].map(b => b.dataset.id);
-            if (!appData.weeks[week]) appData.weeks[week] = {};
-            if (!appData.weeks[week][cellId]) appData.weeks[week][cellId] = { score: -1, stars: [] };
-            appData.weeks[week][cellId].stars = ids;
-            const lessonLabel = appData.lessonNames[cellId] || cellId;
-            appData.outstanding = [
-                ...(appData.outstanding || []).filter(o => !(o.week === week && o.cellId === cellId)),
-                ...ids.map(studentId => ({
-                    id: uid(), studentId, week, cellId, lessonName: lessonLabel,
-                    teacherId: currentUser.id, teacherName: currentUser.name, date: new Date().toISOString()
-                }))
-            ].slice(-400);
-            await dbRef.update({
-                [`weeks.${week}.${cellId}`]: appData.weeks[week][cellId],
-                outstanding: appData.outstanding
-            });
-            closeModal('outstanding-modal');
-            renderAll();
-            showToast('המצטיינים נשמרו לשיעור.', true);
-        };
-
-        document.getElementById('wheel-btn').onclick = openWheelModal;
-        document.getElementById('wheel-source').onchange = () => {
-            document.getElementById('wheel-lesson-wrap').style.display = document.getElementById('wheel-source').value === 'lesson' ? '' : 'none';
-            wheelNames = namesForWheel();
-            drawWheel(wheelNames);
-        };
-        document.getElementById('wheel-lesson-select').onchange = () => { wheelNames = namesForWheel(); drawWheel(wheelNames); };
         document.getElementById('spin-wheel-btn').onclick = spinWheel;
+        window.addEventListener('resize', () => {
+            if (wheelSpinning || !document.getElementById('prize-modal')?.classList.contains('show')) return;
+            redrawWheel();
+        });
 
         document.getElementById('parent-note-btn').onclick = openNoteModal;
         document.getElementById('note-template-select').onchange = applyNoteTemplate;
