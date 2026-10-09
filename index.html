@@ -209,8 +209,8 @@
         .prize-roster .form-group { margin-bottom: 8px; }
         .prize-roster .form-group select { font-size: 1.05em; font-weight: 700; padding: 8px 10px; }
         .prize-count { margin: 0 0 8px; text-align: center; font-size: 0.98em; font-weight: 800; color: #6d4c41; }
-        #prize-student-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; align-content: start; overflow: visible; padding: 1px; }
-        #prize-student-list .student-chip { font-size: 0.86em; padding: 4px 6px; min-height: 30px; border-radius: 8px; line-height: 1.2; }
+        #prize-student-list { flex: 1; min-height: 0; display: grid; gap: 8px; align-content: stretch; overflow: hidden; padding: 1px; }
+        #prize-student-list .student-chip { font-size: 1.05em; padding: 6px 8px; min-height: 42px; border-radius: 10px; line-height: 1.15; display: flex; align-items: center; justify-content: center; text-align: center; }
         #prize-student-list .student-chip.selected { background: #f9a825; color: #3e2723; border-color: #f57f17; box-shadow: 0 0 0 2px rgba(249,168,37,0.45); }
         .prize-stage { background: radial-gradient(circle at 50% 40%, #fff8e1 0%, #f6f1e6 72%); border: 2px solid rgba(249,168,37,0.4); border-radius: 24px; padding: 8px 10px 12px; display: flex; align-items: center; justify-content: center; min-height: 0; }
         .wheel-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
@@ -222,12 +222,7 @@
         #wheel-winner.pop { animation: winnerPop 0.5s ease; }
         @keyframes winnerPop { 0% { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.06); } 100% { transform: scale(1); opacity: 1; } }
         #spin-wheel-btn { width: min(62vh, 620px); max-width: 100%; background: linear-gradient(135deg, #f9a825, #f57f17); color: #3e2723; font-size: 1.25em; padding: 12px 16px; border-radius: 16px; }
-        .prize-sheet:fullscreen, .cards-sheet:fullscreen {
-            width: 100vw; height: 100vh; max-width: none; max-height: none; border-radius: 0;
-        }
-        .prize-sheet:fullscreen .prize-layout { grid-template-columns: minmax(280px, 0.62fr) minmax(520px, 1.38fr); }
-        .prize-sheet:fullscreen #wheel-canvas, .prize-sheet:fullscreen #spin-wheel-btn { width: min(78vh, 760px); }
-        .prize-sheet:fullscreen #prize-student-list { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+        html:fullscreen .prize-sheet, html:fullscreen .cards-sheet { max-height: 96vh; }
         #fortune-deck { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 10px; overflow: auto; padding: 4px; min-height: 0; flex: 1; }
         .deck-card {
             aspect-ratio: 3 / 4; border: none; border-radius: 12px; cursor: pointer; color: #fff8e1;
@@ -245,13 +240,13 @@
         #fortune-float.dragging { cursor: grabbing; animation: none; }
         #fortune-float:not(.dragging) { animation: cardFloat 3.4s ease-in-out infinite; }
         @keyframes cardFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
-        .fortune-card { width: 230px; height: 310px; perspective: 900px; }
+        .fortune-card { width: 158px; height: 214px; perspective: 800px; }
         .fortune-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.7s ease; }
         .fortune-card.is-flipped .fortune-inner { transform: rotateY(180deg); }
         .fortune-back, .fortune-front {
             position: absolute; inset: 0; border-radius: 18px; backface-visibility: hidden;
             display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-            padding: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.28);
+            padding: 10px; box-shadow: 0 10px 24px rgba(0,0,0,0.22);
         }
         .fortune-back {
             background:
@@ -259,17 +254,17 @@
                 repeating-linear-gradient(135deg, #1a237e 0 10px, #283593 10px 20px);
             color: #fff8e1;
         }
-        .fortune-back b { font-size: 1.35em; margin-top: 54px; }
+        .fortune-back b { font-size: 1em; margin-top: 34px; }
         .fortune-back button, .fortune-front button {
-            margin-top: 14px; border: none; border-radius: 12px; padding: 10px 12px; width: 100%;
-            font-family: var(--font-family); font-weight: 800; cursor: pointer; font-size: 1em;
+            margin-top: 8px; border: none; border-radius: 10px; padding: 6px 8px; width: 100%;
+            font-family: var(--font-family); font-weight: 800; cursor: pointer; font-size: 0.78em;
         }
         .fortune-back button { background: #ffd54f; color: #3e2723; }
         .fortune-front { background: #fffdf8; transform: rotateY(180deg); color: #3e2723; }
-        #fortune-name { font-family: David, "Times New Roman", serif; font-size: 1.8em; font-weight: 800; color: #1a237e; line-height: 1.15; }
-        .fortune-front p { margin: 8px 0 0; font-size: 0.95em; font-weight: 700; line-height: 1.35; }
-        #fortune-result { min-height: 1.3em; color: #e65100; font-weight: 800; font-size: 1.15em; }
-        .fortune-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+        #fortune-name { font-family: David, "Times New Roman", serif; font-size: 1.15em; font-weight: 800; color: #1a237e; line-height: 1.15; }
+        .fortune-front p { margin: 4px 0 0; font-size: 0.72em; font-weight: 700; line-height: 1.25; }
+        #fortune-result { min-height: 1em; color: #e65100; font-weight: 800; font-size: 0.9em; }
+        .fortune-actions { display: flex; flex-direction: column; gap: 6px; width: 100%; }
         #fortune-noted-btn { background: #eceff1; color: #37474f; }
         #fortune-prize-btn { background: #f9a825; color: #3e2723; }
         #confetti-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1300; }
@@ -421,6 +416,7 @@
                 <div class="teacher-badge" id="logged-teacher-label"></div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                <button type="button" id="app-fullscreen-btn" class="utility-btn" data-fullscreen>מסך מלא</button>
                 <button type="button" id="mini-window-btn" class="utility-btn gold" title="חלונית צפה של שיעורי היום, מעל שאר התוכנות">חלונית שיעור</button>
                 <button type="button" id="open-admin-from-app-btn" class="utility-btn admin-action admin-only hidden">ניהול מורים</button>
                 <button type="button" id="open-manage-btn" class="utility-btn admin-action homeroom-only">ניהול כיתה</button>
@@ -795,7 +791,7 @@
             <div class="modal" id="history-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>היסטוריית רכישות</h2><div id="purchase-history-list"></div></div></div>
             <div class="modal" id="student-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2 id="student-modal-name"></h2><div id="student-modal-body"></div></div></div>
             <div class="modal" id="prize-modal"><div class="modal-content prize-sheet" id="prize-sheet"><span class="close-btn">&times;</span>
-                <button type="button" id="prize-fullscreen-btn" class="fs-btn">מסך מלא</button>
+                <button type="button" id="prize-fullscreen-btn" class="fs-btn" data-fullscreen>מסך מלא</button>
                 <h2>גלגל המזל</h2>
                 <p class="prize-lead">מי שעולה בגלגל מקבל צ'ופר</p>
                 <div class="prize-layout">
@@ -816,7 +812,7 @@
                 <canvas id="confetti-canvas"></canvas>
             </div></div>
             <div class="modal" id="cards-modal"><div class="modal-content cards-sheet" id="cards-sheet"><span class="close-btn">&times;</span>
-                <button type="button" id="cards-fullscreen-btn" class="fs-btn">מסך מלא</button>
+                <button type="button" id="cards-fullscreen-btn" class="fs-btn" data-fullscreen>מסך מלא</button>
                 <h2>קלפי המזל</h2>
                 <p class="prize-lead">בוחרים קלף הפוך בתחילת השיעור. בסוף הופכים אותו. אם לא הערתם לתלמיד אפילו פעם אחת — מגיע צ'ופר.</p>
                 <p class="prize-count" id="fortune-status"></p>
@@ -1238,6 +1234,49 @@
                 `<button type="button" class="student-chip ${onWheel.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
             ).join('') || '<p>אין תלמידים עדיין. הוסיפו תלמידים בניהול הכיתה.</p>';
             updatePrizeCount();
+            requestAnimationFrame(fitPrizeChips);
+        };
+
+        const fitPrizeChips = () => {
+            const list = document.getElementById('prize-student-list');
+            const roster = list?.closest('.prize-roster');
+            const chips = list ? [...list.querySelectorAll('.student-chip')] : [];
+            if (!list || !roster || !chips.length) return;
+            const listRect = list.getBoundingClientRect();
+            const rosterRect = roster.getBoundingClientRect();
+            const width = listRect.width;
+            const available = rosterRect.bottom - listRect.top - 2;
+            if (width < 40 || available < 40) return;
+            if (window.innerWidth < 769) {
+                list.style.gridTemplateColumns = 'repeat(auto-fill, minmax(108px, 1fr))';
+                list.style.overflowY = 'auto';
+                chips.forEach(c => { c.style.height = '42px'; c.style.fontSize = '16px'; });
+                return;
+            }
+            const gap = 8;
+            let best = null;
+            for (let cols = 1; cols <= Math.min(5, chips.length); cols++) {
+                const rows = Math.ceil(chips.length / cols);
+                const chipW = (width - gap * (cols - 1)) / cols;
+                const chipH = (available - gap * (rows - 1)) / rows;
+                if (chipW < 108 || chipH < 40) continue;
+                const font = Math.min(26, chipH * 0.4, chipW / 6.2);
+                if (!best || font > best.font) best = { cols, chipH, font };
+            }
+            list.style.gap = gap + 'px';
+            if (!best) {
+                list.style.gridTemplateColumns = 'repeat(auto-fill, minmax(120px, 1fr))';
+                list.style.overflowY = 'auto';
+                chips.forEach(c => { c.style.height = '48px'; c.style.fontSize = '17px'; });
+                return;
+            }
+            list.style.overflow = 'hidden';
+            list.style.gridTemplateColumns = `repeat(${best.cols}, minmax(0, 1fr))`;
+            const font = Math.max(16, best.font);
+            chips.forEach(c => {
+                c.style.height = Math.floor(best.chipH) + 'px';
+                c.style.fontSize = font.toFixed(1) + 'px';
+            });
         };
 
         const loadLessonOntoWheel = (cellId) => {
@@ -1290,7 +1329,7 @@
             loadLessonOntoWheel(select.value);
             clearWinner();
             openModal('prize-modal');
-            requestAnimationFrame(() => requestAnimationFrame(redrawWheel));
+            requestAnimationFrame(() => requestAnimationFrame(() => { redrawWheel(); fitPrizeChips(); }));
         };
 
         const launchConfetti = () => {
@@ -1427,18 +1466,16 @@
             requestAnimationFrame(animate);
         };
 
-        const bindFullscreen = (btnId, targetId) => {
-            const btn = document.getElementById(btnId);
-            const target = document.getElementById(targetId);
-            const sync = () => { btn.textContent = document.fullscreenElement === target ? 'צא ממסך מלא' : 'מסך מלא'; };
-            btn.onclick = () => {
-                if (document.fullscreenElement === target) document.exitFullscreen();
-                else target.requestFullscreen();
-            };
-            document.addEventListener('fullscreenchange', sync);
+        const syncFullscreenButtons = () => {
+            const label = document.fullscreenElement ? 'צא ממסך מלא' : 'מסך מלא';
+            document.querySelectorAll('[data-fullscreen]').forEach(btn => { btn.textContent = label; });
         };
-        bindFullscreen('prize-fullscreen-btn', 'prize-sheet');
-        bindFullscreen('cards-fullscreen-btn', 'cards-sheet');
+        const toggleAppFullscreen = () => {
+            if (document.fullscreenElement) document.exitFullscreen();
+            else document.documentElement.requestFullscreen();
+        };
+        document.querySelectorAll('[data-fullscreen]').forEach(btn => { btn.onclick = toggleAppFullscreen; });
+        document.addEventListener('fullscreenchange', syncFullscreenButtons);
 
         const FORTUNE_KEY = 'hakoachFortuneCard';
         let fortuneCard = null;
@@ -1917,12 +1954,16 @@
         };
         document.getElementById('spin-wheel-btn').onclick = spinWheel;
         window.addEventListener('resize', () => {
-            if (wheelSpinning || !document.getElementById('prize-modal')?.classList.contains('show')) return;
-            redrawWheel();
+            if (!document.getElementById('prize-modal')?.classList.contains('show')) return;
+            if (!wheelSpinning) redrawWheel();
+            fitPrizeChips();
         });
         document.addEventListener('fullscreenchange', () => {
-            if (wheelSpinning || !document.getElementById('prize-modal')?.classList.contains('show')) return;
-            requestAnimationFrame(redrawWheel);
+            if (!document.getElementById('prize-modal')?.classList.contains('show')) return;
+            requestAnimationFrame(() => {
+                if (!wheelSpinning) redrawWheel();
+                fitPrizeChips();
+            });
         });
 
         document.getElementById('cards-btn').onclick = openCardsModal;
