@@ -267,6 +267,44 @@
         .fortune-actions { display: flex; flex-direction: column; gap: 6px; width: 100%; }
         #fortune-noted-btn { background: #eceff1; color: #37474f; }
         #fortune-prize-btn { background: #f9a825; color: #3e2723; }
+        #wheel-float {
+            position: fixed; z-index: 930; left: 16px; bottom: 78px; width: 200px;
+            display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+            touch-action: none;
+        }
+        #wheel-float.dragging { cursor: grabbing; }
+        .wheel-float-bar { display: flex; gap: 6px; }
+        #wheel-float-list-btn, #wheel-float-expand, #wheel-float-close, #wheel-float-spin {
+            border: none; border-radius: 12px; font-family: var(--font-family); font-weight: 800; cursor: pointer;
+        }
+        #wheel-float-list-btn {
+            flex: 1; background: #fffdf8; border: 2px solid #f9a825; color: #5d4037; padding: 6px 8px; text-align: right;
+        }
+        #wheel-float-expand, #wheel-float-close { background: #1976D2; color: #fff; padding: 6px 8px; }
+        #wheel-float-panel {
+            background: #fffdf8; border: 2px solid rgba(249,168,37,.6); border-radius: 12px;
+            padding: 8px; max-height: 220px; overflow: auto; display: flex; flex-direction: column; gap: 6px;
+        }
+        #wheel-float-lesson { font-family: var(--font-family); font-weight: 700; padding: 6px; border-radius: 8px; border: 1px solid #c4bbaa; }
+        #wheel-float-students { display: flex; flex-direction: column; gap: 4px; }
+        #wheel-float-students .student-chip { font-size: 0.82em; padding: 4px 8px; min-height: 30px; width: 100%; text-align: right; }
+        #wheel-float-students .student-chip.selected { background: #f9a825; color: #3e2723; border-color: #f57f17; }
+        .wheel-float-disc { display: flex; flex-direction: column; align-items: center; cursor: grab; }
+        #wheel-float-canvas { width: 188px; height: 188px; }
+        .wheel-pointer-sm { border-left-width: 10px; border-right-width: 10px; border-top-width: 16px; margin-bottom: -2px; }
+        #wheel-float-spin {
+            margin-top: -16px; position: relative; z-index: 2;
+            background: linear-gradient(135deg, #f9a825, #f57f17); color: #3e2723; padding: 4px 16px;
+        }
+        #wheel-float-winner {
+            text-align: center; font-weight: 800; color: #1b5e20; min-height: 0;
+            background: rgba(255,253,248,.94); border-radius: 8px;
+        }
+        #wheel-float-winner:empty { display: none; }
+        .dock-btn {
+            display: block; margin: 0 auto 8px; background: #fff; border: 2px solid #f9a825; color: #5d4037;
+            border-radius: 12px; padding: 6px 14px; font-family: var(--font-family); font-weight: 800; cursor: pointer;
+        }
         #confetti-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1300; }
         #install-app-btn {
             display: flex; margin: 18px auto 0; background: linear-gradient(135deg, #1976D2, #0D47A1); color: white;
@@ -529,6 +567,24 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="wheel-float" class="hidden">
+        <div class="wheel-float-bar">
+            <button type="button" id="wheel-float-list-btn">תלמידים <b id="wheel-float-count"></b></button>
+            <button type="button" id="wheel-float-expand">הגדל</button>
+            <button type="button" id="wheel-float-close" title="סגור">×</button>
+        </div>
+        <div id="wheel-float-panel" class="hidden">
+            <select id="wheel-float-lesson"></select>
+            <div id="wheel-float-students"></div>
+        </div>
+        <div class="wheel-float-disc">
+            <div class="wheel-pointer wheel-pointer-sm"></div>
+            <canvas id="wheel-float-canvas" data-wheel width="360" height="360"></canvas>
+            <button type="button" id="wheel-float-spin">סובב</button>
+        </div>
+        <div id="wheel-float-winner"></div>
     </div>
 
     <div id="generic-modal-container"></div>
@@ -794,6 +850,7 @@
                 <button type="button" id="prize-fullscreen-btn" class="fs-btn" data-fullscreen>מסך מלא</button>
                 <h2>גלגל המזל</h2>
                 <p class="prize-lead">מי שעולה בגלגל מקבל צ'ופר</p>
+                <button type="button" id="prize-dock-btn" class="dock-btn">לווה את השיעור</button>
                 <div class="prize-layout">
                     <div class="prize-roster">
                         <div class="form-group"><label>שיעור</label><select id="prize-lesson-select"></select></div>
@@ -803,7 +860,7 @@
                     <div class="prize-stage">
                         <div class="wheel-wrap">
                             <div class="wheel-pointer"></div>
-                            <canvas id="wheel-canvas" width="640" height="640"></canvas>
+                            <canvas id="wheel-canvas" data-wheel width="640" height="640"></canvas>
                             <div id="wheel-winner"></div>
                             <button type="button" id="spin-wheel-btn" class="modal-btn">סובב את הגלגל</button>
                         </div>
@@ -1156,31 +1213,26 @@
             return rest ? `${first} ${rest[0]}.` : first;
         };
 
-        const fitWheelCanvas = () => {
-            const canvas = document.getElementById('wheel-canvas');
-            const display = Math.round(canvas.getBoundingClientRect().width) || 420;
+        const paintWheel = (canvas, names, rotation, highlight) => {
+            const display = Math.round(canvas.getBoundingClientRect().width) || 180;
             const dpr = Math.min(2, window.devicePixelRatio || 1);
-            const size = Math.max(320, display) * dpr;
+            const size = Math.max(160, display) * dpr;
             if (canvas.width !== size) {
                 canvas.width = size;
                 canvas.height = size;
             }
-        };
-
-        const drawWheel = (names, rotation = 0, highlight = -1) => {
-            wheelRotation = rotation;
-            wheelHighlight = highlight;
-            const canvas = document.getElementById('wheel-canvas');
             const ctx = canvas.getContext('2d');
-            const size = canvas.width;
             const cx = size / 2, cy = size / 2, r = size / 2 - size * 0.02;
             ctx.clearRect(0, 0, size, size);
             if (!names.length) {
                 ctx.fillStyle = '#8d6e63';
-                ctx.font = `700 ${Math.round(size * 0.045)}px Assistant`;
                 ctx.textAlign = 'center';
-                ctx.fillText('לחצו על תלמידים', cx, cy - size * 0.02);
-                ctx.fillText('כדי להוסיף אותם לגלגל', cx, cy + size * 0.045);
+                ctx.font = `700 ${Math.round(size * (size < 460 ? 0.07 : 0.045))}px Assistant`;
+                if (size < 460) ctx.fillText('הוסיפו תלמידים', cx, cy);
+                else {
+                    ctx.fillText('לחצו על תלמידים', cx, cy - size * 0.02);
+                    ctx.fillText('כדי להוסיף אותם לגלגל', cx, cy + size * 0.045);
+                }
                 return;
             }
             const pal = ['#1976D2','#009688','#f9a825','#7b1fa2','#d32f2f','#388e3c','#0288d1','#ef6c00'];
@@ -1195,7 +1247,7 @@
                 ctx.fillStyle = i === highlight ? '#ffd54f' : pal[i % pal.length];
                 ctx.fill();
                 ctx.strokeStyle = '#fff';
-                ctx.lineWidth = Math.max(3, size * 0.006);
+                ctx.lineWidth = Math.max(2, size * 0.006);
                 ctx.stroke();
                 ctx.save();
                 ctx.translate(cx, cy);
@@ -1211,14 +1263,20 @@
             ctx.fillStyle = '#fff';
             ctx.fill();
             ctx.strokeStyle = '#f9a825';
-            ctx.lineWidth = Math.max(5, size * 0.012);
+            ctx.lineWidth = Math.max(4, size * 0.012);
             ctx.stroke();
         };
 
-        const redrawWheel = () => {
-            fitWheelCanvas();
-            drawWheel(wheelNames, wheelRotation, wheelHighlight);
+        const drawWheel = (names, rotation = 0, highlight = -1) => {
+            wheelRotation = rotation;
+            wheelHighlight = highlight;
+            document.querySelectorAll('[data-wheel]').forEach(canvas => {
+                if (!canvas.offsetParent) return;
+                paintWheel(canvas, names, rotation, highlight);
+            });
         };
+
+        const redrawWheel = () => drawWheel(wheelNames, wheelRotation, wheelHighlight);
 
         const updatePrizeCount = () => {
             const n = wheelNames.length;
@@ -1234,6 +1292,14 @@
                 `<button type="button" class="student-chip ${onWheel.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
             ).join('') || '<p>אין תלמידים עדיין. הוסיפו תלמידים בניהול הכיתה.</p>';
             updatePrizeCount();
+            const count = document.getElementById('wheel-float-count');
+            if (count) count.textContent = wheelNames.length ? String(wheelNames.length) : '';
+            const floatList = document.getElementById('wheel-float-students');
+            if (floatList) {
+                floatList.innerHTML = students.map(s =>
+                    `<button type="button" class="student-chip ${onWheel.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
+                ).join('');
+            }
             requestAnimationFrame(fitPrizeChips);
         };
 
@@ -1293,6 +1359,48 @@
             const el = document.getElementById('wheel-winner');
             el.innerHTML = '';
             el.classList.remove('pop');
+            const mini = document.getElementById('wheel-float-winner');
+            if (mini) mini.textContent = '';
+        };
+
+        const showWinner = (name) => {
+            const el = document.getElementById('wheel-winner');
+            el.innerHTML = `<span class="winner-name">${escapeHtml(name)}</span><span class="winner-prize">מקבל צ'ופר!</span>`;
+            el.classList.remove('pop');
+            void el.offsetWidth;
+            el.classList.add('pop');
+            const mini = document.getElementById('wheel-float-winner');
+            if (mini) mini.textContent = name.split(' ')[0];
+        };
+
+        const setSpinDisabled = (on) => {
+            document.getElementById('spin-wheel-btn').disabled = on;
+            const mini = document.getElementById('wheel-float-spin');
+            if (mini) mini.disabled = on;
+        };
+
+        const dockWheel = () => {
+            const select = document.getElementById('prize-lesson-select');
+            if (!select.options.length) fillLessonSelect(select);
+            if (!select.value && select.options.length) select.selectedIndex = 0;
+            if (!wheelIds.length && select.value) loadLessonOntoWheel(select.value);
+            const mini = document.getElementById('wheel-float-lesson');
+            mini.innerHTML = select.innerHTML;
+            mini.value = select.value;
+            closeModal('prize-modal');
+            document.getElementById('wheel-float-panel').classList.add('hidden');
+            document.getElementById('wheel-float').classList.remove('hidden');
+            renderPrizeStudents();
+            requestAnimationFrame(redrawWheel);
+        };
+
+        const expandWheel = () => {
+            document.getElementById('wheel-float').classList.add('hidden');
+            const select = document.getElementById('prize-lesson-select');
+            if (!select.options.length) fillLessonSelect(select);
+            renderPrizeStudents();
+            openModal('prize-modal');
+            requestAnimationFrame(() => requestAnimationFrame(() => { redrawWheel(); fitPrizeChips(); }));
         };
 
         const persistPrize = (cellId, ids) => {
@@ -1328,6 +1436,7 @@
             if (!select.value && select.options.length) select.selectedIndex = 0;
             loadLessonOntoWheel(select.value);
             clearWinner();
+            document.getElementById('wheel-float').classList.add('hidden');
             openModal('prize-modal');
             requestAnimationFrame(() => requestAnimationFrame(() => { redrawWheel(); fitPrizeChips(); }));
         };
@@ -1435,7 +1544,7 @@
             primeFanfare();
             wheelSpinning = true;
             wheelHighlight = -1;
-            document.getElementById('spin-wheel-btn').disabled = true;
+            setSpinDisabled(true);
             clearWinner();
             const names = wheelNames.slice();
             const winnerIndex = Math.floor(secureRandom() * names.length);
@@ -1452,15 +1561,11 @@
                 if (t < 1) requestAnimationFrame(animate);
                 else {
                     drawWheel(names, targetDeg * Math.PI / 180, winnerIndex);
-                    const el = document.getElementById('wheel-winner');
-                    el.innerHTML = `<span class="winner-name">${escapeHtml(names[winnerIndex])}</span><span class="winner-prize">מקבל צ'ופר!</span>`;
-                    el.classList.remove('pop');
-                    void el.offsetWidth;
-                    el.classList.add('pop');
+                    showWinner(names[winnerIndex]);
                     launchConfetti();
                     playFanfare();
                     wheelSpinning = false;
-                    document.getElementById('spin-wheel-btn').disabled = false;
+                    setSpinDisabled(false);
                 }
             };
             requestAnimationFrame(animate);
@@ -1696,6 +1801,7 @@
             miniWindow = null;
             setFloatMode(false);
             document.getElementById('fortune-float')?.classList.add('hidden');
+            document.getElementById('wheel-float')?.classList.add('hidden');
             showView('login-page');
             document.getElementById('setup-hint').classList.toggle('hidden', !!appData.setupComplete);
         };
@@ -1929,16 +2035,58 @@
         });
 
         document.getElementById('prize-btn').onclick = () => openPrizeModal();
+        document.getElementById('prize-dock-btn').onclick = dockWheel;
+        document.getElementById('wheel-float-expand').onclick = expandWheel;
+        document.getElementById('wheel-float-close').onclick = () => document.getElementById('wheel-float').classList.add('hidden');
+        document.getElementById('wheel-float-list-btn').onclick = () => {
+            document.getElementById('wheel-float-panel').classList.toggle('hidden');
+            const select = document.getElementById('prize-lesson-select');
+            const mini = document.getElementById('wheel-float-lesson');
+            if (!select.options.length) fillLessonSelect(select);
+            mini.innerHTML = select.innerHTML;
+            mini.value = select.value;
+        };
+        document.getElementById('wheel-float-lesson').onchange = () => {
+            if (wheelSpinning) return;
+            const value = document.getElementById('wheel-float-lesson').value;
+            document.getElementById('prize-lesson-select').value = value;
+            loadLessonOntoWheel(value);
+            clearWinner();
+            redrawWheel();
+        };
+        document.getElementById('wheel-float-students').onclick = (e) => {
+            const btn = e.target.closest('.student-chip');
+            if (btn) toggleWheelStudent(btn.dataset.id);
+        };
+        document.getElementById('wheel-float-spin').onclick = spinWheel;
+        (() => {
+            const floater = document.getElementById('wheel-float');
+            let drag = null;
+            floater.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('button, select, #wheel-float-panel')) return;
+                const rect = floater.getBoundingClientRect();
+                drag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+                floater.classList.add('dragging');
+                floater.setPointerCapture(e.pointerId);
+            });
+            floater.addEventListener('pointermove', (e) => {
+                if (!drag) return;
+                floater.style.left = (e.clientX - drag.dx) + 'px';
+                floater.style.top = (e.clientY - drag.dy) + 'px';
+                floater.style.bottom = 'auto';
+            });
+            const endDrag = () => { drag = null; floater.classList.remove('dragging'); };
+            floater.addEventListener('pointerup', endDrag);
+            floater.addEventListener('pointercancel', endDrag);
+        })();
         document.getElementById('prize-lesson-select').onchange = () => {
             if (wheelSpinning) return;
             loadLessonOntoWheel(document.getElementById('prize-lesson-select').value);
             clearWinner();
             redrawWheel();
         };
-        document.getElementById('prize-student-list').onclick = (e) => {
-            const btn = e.target.closest('.student-chip');
-            if (!btn || wheelSpinning) return;
-            const id = btn.dataset.id;
+        const toggleWheelStudent = (id) => {
+            if (!id || wheelSpinning) return;
             const cellId = document.getElementById('prize-lesson-select').value;
             if (!cellId) return;
             const students = appData.students || [];
@@ -1952,11 +2100,17 @@
             redrawWheel();
             persistPrize(cellId, wheelIds);
         };
+        document.getElementById('prize-student-list').onclick = (e) => {
+            const btn = e.target.closest('.student-chip');
+            if (btn) toggleWheelStudent(btn.dataset.id);
+        };
         document.getElementById('spin-wheel-btn').onclick = spinWheel;
         window.addEventListener('resize', () => {
-            if (!document.getElementById('prize-modal')?.classList.contains('show')) return;
+            const open = document.getElementById('prize-modal')?.classList.contains('show')
+                || !document.getElementById('wheel-float').classList.contains('hidden');
+            if (!open) return;
             if (!wheelSpinning) redrawWheel();
-            fitPrizeChips();
+            if (document.getElementById('prize-modal')?.classList.contains('show')) fitPrizeChips();
         });
         document.addEventListener('fullscreenchange', () => {
             if (!document.getElementById('prize-modal')?.classList.contains('show')) return;
