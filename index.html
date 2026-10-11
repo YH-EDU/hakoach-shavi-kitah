@@ -267,44 +267,8 @@
         .fortune-actions { display: flex; flex-direction: column; gap: 6px; width: 100%; }
         #fortune-noted-btn { background: #eceff1; color: #37474f; }
         #fortune-prize-btn { background: #f9a825; color: #3e2723; }
-        #wheel-float {
-            position: fixed; z-index: 930; left: 16px; bottom: 78px; width: 200px;
-            display: flex; flex-direction: column; align-items: stretch; gap: 6px;
-            touch-action: none;
-        }
-        #wheel-float.dragging { cursor: grabbing; }
-        .wheel-float-bar { display: flex; gap: 6px; }
-        #wheel-float-list-btn, #wheel-float-expand, #wheel-float-close, #wheel-float-spin {
-            border: none; border-radius: 12px; font-family: var(--font-family); font-weight: 800; cursor: pointer;
-        }
-        #wheel-float-list-btn {
-            flex: 1; background: #fffdf8; border: 2px solid #f9a825; color: #5d4037; padding: 6px 8px; text-align: right;
-        }
-        #wheel-float-expand, #wheel-float-close { background: #1976D2; color: #fff; padding: 6px 8px; }
-        #wheel-float-panel {
-            background: #fffdf8; border: 2px solid rgba(249,168,37,.6); border-radius: 12px;
-            padding: 8px; max-height: 220px; overflow: auto; display: flex; flex-direction: column; gap: 6px;
-        }
-        #wheel-float-lesson { font-family: var(--font-family); font-weight: 700; padding: 6px; border-radius: 8px; border: 1px solid #c4bbaa; }
-        #wheel-float-students { display: flex; flex-direction: column; gap: 4px; }
-        #wheel-float-students .student-chip { font-size: 0.82em; padding: 4px 8px; min-height: 30px; width: 100%; text-align: right; }
-        #wheel-float-students .student-chip.selected { background: #f9a825; color: #3e2723; border-color: #f57f17; }
-        .wheel-float-disc { display: flex; flex-direction: column; align-items: center; cursor: grab; }
-        #wheel-float-canvas { width: 188px; height: 188px; }
-        .wheel-pointer-sm { border-left-width: 10px; border-right-width: 10px; border-top-width: 16px; margin-bottom: -2px; }
-        #wheel-float-spin {
-            margin-top: -16px; position: relative; z-index: 2;
-            background: linear-gradient(135deg, #f9a825, #f57f17); color: #3e2723; padding: 4px 16px;
-        }
-        #wheel-float-winner {
-            text-align: center; font-weight: 800; color: #1b5e20; min-height: 0;
-            background: rgba(255,253,248,.94); border-radius: 8px;
-        }
-        #wheel-float-winner:empty { display: none; }
-        .dock-btn {
-            display: block; margin: 0 auto 8px; background: #fff; border: 2px solid #f9a825; color: #5d4037;
-            border-radius: 12px; padding: 6px 14px; font-family: var(--font-family); font-weight: 800; cursor: pointer;
-        }
+        #prize-fullscreen-btn { left: 136px; }
+        #prize-dock-btn { left: 52px; border-color: #1976D2; color: #0d47a1; }
         #confetti-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1300; }
         #install-app-btn {
             display: flex; margin: 18px auto 0; background: linear-gradient(135deg, #1976D2, #0D47A1); color: white;
@@ -569,24 +533,6 @@
         </div>
     </div>
 
-    <div id="wheel-float" class="hidden">
-        <div class="wheel-float-bar">
-            <button type="button" id="wheel-float-list-btn">תלמידים <b id="wheel-float-count"></b></button>
-            <button type="button" id="wheel-float-expand">הגדל</button>
-            <button type="button" id="wheel-float-close" title="סגור">×</button>
-        </div>
-        <div id="wheel-float-panel" class="hidden">
-            <select id="wheel-float-lesson"></select>
-            <div id="wheel-float-students"></div>
-        </div>
-        <div class="wheel-float-disc">
-            <div class="wheel-pointer wheel-pointer-sm"></div>
-            <canvas id="wheel-float-canvas" data-wheel width="360" height="360"></canvas>
-            <button type="button" id="wheel-float-spin">סובב</button>
-        </div>
-        <div id="wheel-float-winner"></div>
-    </div>
-
     <div id="generic-modal-container"></div>
 
     <script>
@@ -658,6 +604,7 @@
         let appData = {};
         let currentUser = null;
         let miniWindow = null;
+        let wheelWindow = null;
         let mobileDayIndex = -1;
         let wheelIds = [];
         let wheelNames = [];
@@ -848,9 +795,9 @@
             <div class="modal" id="student-modal"><div class="modal-content"><span class="close-btn">&times;</span><h2 id="student-modal-name"></h2><div id="student-modal-body"></div></div></div>
             <div class="modal" id="prize-modal"><div class="modal-content prize-sheet" id="prize-sheet"><span class="close-btn">&times;</span>
                 <button type="button" id="prize-fullscreen-btn" class="fs-btn" data-fullscreen>מסך מלא</button>
+                <button type="button" id="prize-dock-btn" class="fs-btn" title="חלון קטן מעל השיעור">כיווץ</button>
                 <h2>גלגל המזל</h2>
                 <p class="prize-lead">מי שעולה בגלגל מקבל צ'ופר</p>
-                <button type="button" id="prize-dock-btn" class="dock-btn">לווה את השיעור</button>
                 <div class="prize-layout">
                     <div class="prize-roster">
                         <div class="form-group"><label>שיעור</label><select id="prize-lesson-select"></select></div>
@@ -1267,11 +1214,16 @@
             ctx.stroke();
         };
 
+        const wheelMiniDoc = () => (wheelWindow && !wheelWindow.closed) ? wheelWindow.document : null;
+
         const drawWheel = (names, rotation = 0, highlight = -1) => {
             wheelRotation = rotation;
             wheelHighlight = highlight;
-            document.querySelectorAll('[data-wheel]').forEach(canvas => {
-                if (!canvas.offsetParent) return;
+            const canvases = [...document.querySelectorAll('[data-wheel]')];
+            const mini = wheelMiniDoc()?.getElementById('wm-canvas');
+            if (mini) canvases.push(mini);
+            canvases.forEach(canvas => {
+                if (!canvas.isConnected || !canvas.offsetParent) return;
                 paintWheel(canvas, names, rotation, highlight);
             });
         };
@@ -1292,13 +1244,16 @@
                 `<button type="button" class="student-chip ${onWheel.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
             ).join('') || '<p>אין תלמידים עדיין. הוסיפו תלמידים בניהול הכיתה.</p>';
             updatePrizeCount();
-            const count = document.getElementById('wheel-float-count');
-            if (count) count.textContent = wheelNames.length ? String(wheelNames.length) : '';
-            const floatList = document.getElementById('wheel-float-students');
-            if (floatList) {
-                floatList.innerHTML = students.map(s =>
-                    `<button type="button" class="student-chip ${onWheel.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
-                ).join('');
+            const miniDoc = wheelMiniDoc();
+            if (miniDoc) {
+                const count = miniDoc.getElementById('wm-count');
+                if (count) count.textContent = wheelNames.length ? String(wheelNames.length) : '';
+                const floatList = miniDoc.getElementById('wm-students');
+                if (floatList) {
+                    floatList.innerHTML = students.map(s =>
+                        `<button type="button" class="chip ${onWheel.has(s.id) ? 'on' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
+                    ).join('');
+                }
             }
             requestAnimationFrame(fitPrizeChips);
         };
@@ -1359,7 +1314,7 @@
             const el = document.getElementById('wheel-winner');
             el.innerHTML = '';
             el.classList.remove('pop');
-            const mini = document.getElementById('wheel-float-winner');
+            const mini = wheelMiniDoc()?.getElementById('wm-winner');
             if (mini) mini.textContent = '';
         };
 
@@ -1369,33 +1324,151 @@
             el.classList.remove('pop');
             void el.offsetWidth;
             el.classList.add('pop');
-            const mini = document.getElementById('wheel-float-winner');
-            if (mini) mini.textContent = name.split(' ')[0];
+            const mini = wheelMiniDoc()?.getElementById('wm-winner');
+            if (mini) mini.textContent = name.split(' ')[0] + " · צ'ופר";
         };
 
         const setSpinDisabled = (on) => {
             document.getElementById('spin-wheel-btn').disabled = on;
-            const mini = document.getElementById('wheel-float-spin');
+            const mini = wheelMiniDoc()?.getElementById('wm-spin');
             if (mini) mini.disabled = on;
         };
 
-        const dockWheel = () => {
+        const WHEEL_MINI_CSS = `
+            html, body { margin: 0; background: #fffdf8; color: #3e2723; font-family: Assistant, Arial, sans-serif; overflow: hidden; }
+            #wheel-mini { display: flex; flex-direction: column; gap: 4px; padding: 6px; }
+            .bar { display: flex; gap: 4px; }
+            button, select { font-family: inherit; }
+            #wm-list, #wm-expand, #wm-close, #wm-spin, .chip { border: none; border-radius: 8px; font-weight: 800; cursor: pointer; }
+            #wm-list { flex: 1; background: #fff; border: 2px solid #f9a825; color: #5d4037; padding: 4px 6px; text-align: right; font-size: 13px; }
+            #wm-expand, #wm-close { background: #1976D2; color: #fff; padding: 4px 7px; font-size: 13px; }
+            #wm-panel { display: flex; flex-direction: column; gap: 4px; max-height: 148px; overflow: auto; }
+            #wm-panel[hidden] { display: none !important; }
+            #wm-lesson { font-weight: 700; padding: 4px; border-radius: 8px; border: 1px solid #c4bbaa; }
+            .chip { display: block; width: 100%; text-align: right; background: #e3f2fd; color: #0d47a1; border: 2px solid #90caf9; padding: 3px 6px; font-size: 13px; }
+            .chip.on { background: #f9a825; color: #3e2723; border-color: #f57f17; }
+            .disc { display: flex; flex-direction: column; align-items: center; }
+            .ptr { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 14px solid #d32f2f; margin-bottom: -2px; }
+            #wm-canvas { width: 148px; height: 148px; }
+            #wm-spin { margin-top: -14px; background: linear-gradient(135deg, #f9a825, #f57f17); color: #3e2723; padding: 3px 12px; font-size: 13px; }
+            #wm-winner { text-align: center; font-weight: 800; color: #1b5e20; font-size: 13px; }
+            #wm-winner:empty { display: none; }
+            button:disabled { background: #bdbdbd !important; cursor: default; }
+        `;
+
+        const prepareWheelDoc = (win) => {
+            const doc = win.document;
+            doc.open();
+            doc.write('<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>גלגל המזל</title></head><body><div id="wheel-mini"><div class="bar"><button type="button" id="wm-list">תלמידים <b id="wm-count"></b></button><button type="button" id="wm-expand">הגדל</button><button type="button" id="wm-close" title="סגור">×</button></div><div id="wm-panel" hidden><select id="wm-lesson"></select><div id="wm-students"></div></div><div class="disc"><div class="ptr"></div><canvas id="wm-canvas" width="320" height="320"></canvas><button type="button" id="wm-spin">סובב</button></div><div id="wm-winner"></div></div></body></html>');
+            doc.close();
+            const font = doc.createElement('link');
+            font.rel = 'stylesheet';
+            font.href = 'https://fonts.googleapis.com/css2?family=Assistant:wght@700;800&display=swap';
+            doc.head.appendChild(font);
+            const style = doc.createElement('style');
+            style.textContent = WHEEL_MINI_CSS;
+            doc.head.appendChild(style);
+            font.onload = () => redrawWheel();
+        };
+
+        const fitWheelWindow = () => {
+            if (!wheelWindow || wheelWindow.closed) return;
+            const root = wheelWindow.document.getElementById('wheel-mini');
+            if (!root) return;
+            const contentH = Math.ceil(root.getBoundingClientRect().height) + 10;
+            const contentW = 168;
+            const chromeH = Math.max(0, wheelWindow.outerHeight - wheelWindow.innerHeight);
+            const chromeW = Math.max(0, wheelWindow.outerWidth - wheelWindow.innerWidth);
+            try { wheelWindow.resizeTo(contentW + chromeW, contentH + chromeH + 2); } catch (e) {}
+        };
+
+        const syncWheelMiniLesson = () => {
+            const doc = wheelMiniDoc();
+            if (!doc) return;
+            const select = document.getElementById('prize-lesson-select');
+            const mini = doc.getElementById('wm-lesson');
+            if (!mini || !select) return;
+            mini.innerHTML = select.innerHTML;
+            mini.value = select.value;
+        };
+
+        const bindWheelMini = (doc) => {
+            doc.getElementById('wm-expand').onclick = () => expandWheel();
+            doc.getElementById('wm-close').onclick = () => closeWheelWindow();
+            doc.getElementById('wm-list').onclick = () => {
+                const panel = doc.getElementById('wm-panel');
+                panel.hidden = !panel.hidden;
+                syncWheelMiniLesson();
+                requestAnimationFrame(fitWheelWindow);
+            };
+            doc.getElementById('wm-lesson').onchange = () => {
+                if (wheelSpinning) return;
+                const value = doc.getElementById('wm-lesson').value;
+                document.getElementById('prize-lesson-select').value = value;
+                loadLessonOntoWheel(value);
+                clearWinner();
+                redrawWheel();
+            };
+            doc.getElementById('wm-students').onclick = (e) => {
+                const btn = e.target.closest('.chip');
+                if (btn) toggleWheelStudent(btn.dataset.id);
+            };
+            doc.getElementById('wm-spin').onclick = spinWheel;
+        };
+
+        const closeWheelWindow = () => {
+            const win = wheelWindow;
+            wheelWindow = null;
+            if (win && !win.closed) win.close();
+        };
+
+        const collapseWheel = async () => {
+            primeFanfare();
             const select = document.getElementById('prize-lesson-select');
             if (!select.options.length) fillLessonSelect(select);
             if (!select.value && select.options.length) select.selectedIndex = 0;
             if (!wheelIds.length && select.value) loadLessonOntoWheel(select.value);
-            const mini = document.getElementById('wheel-float-lesson');
-            mini.innerHTML = select.innerHTML;
-            mini.value = select.value;
             closeModal('prize-modal');
-            document.getElementById('wheel-float-panel').classList.add('hidden');
-            document.getElementById('wheel-float').classList.remove('hidden');
-            renderPrizeStudents();
-            requestAnimationFrame(redrawWheel);
+            if (wheelWindow && !wheelWindow.closed) {
+                syncWheelMiniLesson();
+                renderPrizeStudents();
+                requestAnimationFrame(() => { redrawWheel(); fitWheelWindow(); });
+                return;
+            }
+            const width = 176;
+            const height = 230;
+            const attach = (win) => {
+                prepareWheelDoc(win);
+                wheelWindow = win;
+                bindWheelMini(win.document);
+                syncWheelMiniLesson();
+                win.addEventListener('pagehide', () => {
+                    if (wheelWindow === win) wheelWindow = null;
+                });
+                renderPrizeStudents();
+                requestAnimationFrame(() => { redrawWheel(); fitWheelWindow(); });
+            };
+            const lessonPipOpen = !!(window.documentPictureInPicture?.window && miniWindow && documentPictureInPicture.window === miniWindow);
+            try {
+                if (window.documentPictureInPicture && !lessonPipOpen) {
+                    attach(await documentPictureInPicture.requestWindow({ width, height }));
+                    return;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            const pop = window.open('', 'hakoach-wheel', `popup=yes,width=${width},height=${height},left=${window.screen.availLeft + 8},top=${window.screen.availTop + 64}`);
+            if (!pop) {
+                showToast('הדפדפן חסם את החלון. אשרו חלונות קופצים, או פתחו ב-Chrome / Edge.');
+                expandWheel();
+                return;
+            }
+            attach(pop);
+            try { pop.focus(); } catch (e) {}
         };
 
         const expandWheel = () => {
-            document.getElementById('wheel-float').classList.add('hidden');
+            closeWheelWindow();
             const select = document.getElementById('prize-lesson-select');
             if (!select.options.length) fillLessonSelect(select);
             renderPrizeStudents();
@@ -1436,7 +1509,7 @@
             if (!select.value && select.options.length) select.selectedIndex = 0;
             loadLessonOntoWheel(select.value);
             clearWinner();
-            document.getElementById('wheel-float').classList.add('hidden');
+            closeWheelWindow();
             openModal('prize-modal');
             requestAnimationFrame(() => requestAnimationFrame(() => { redrawWheel(); fitPrizeChips(); }));
         };
@@ -1801,7 +1874,7 @@
             miniWindow = null;
             setFloatMode(false);
             document.getElementById('fortune-float')?.classList.add('hidden');
-            document.getElementById('wheel-float')?.classList.add('hidden');
+            closeWheelWindow();
             showView('login-page');
             document.getElementById('setup-hint').classList.toggle('hidden', !!appData.setupComplete);
         };
@@ -2035,54 +2108,12 @@
         });
 
         document.getElementById('prize-btn').onclick = () => openPrizeModal();
-        document.getElementById('prize-dock-btn').onclick = dockWheel;
-        document.getElementById('wheel-float-expand').onclick = expandWheel;
-        document.getElementById('wheel-float-close').onclick = () => document.getElementById('wheel-float').classList.add('hidden');
-        document.getElementById('wheel-float-list-btn').onclick = () => {
-            document.getElementById('wheel-float-panel').classList.toggle('hidden');
-            const select = document.getElementById('prize-lesson-select');
-            const mini = document.getElementById('wheel-float-lesson');
-            if (!select.options.length) fillLessonSelect(select);
-            mini.innerHTML = select.innerHTML;
-            mini.value = select.value;
-        };
-        document.getElementById('wheel-float-lesson').onchange = () => {
-            if (wheelSpinning) return;
-            const value = document.getElementById('wheel-float-lesson').value;
-            document.getElementById('prize-lesson-select').value = value;
-            loadLessonOntoWheel(value);
-            clearWinner();
-            redrawWheel();
-        };
-        document.getElementById('wheel-float-students').onclick = (e) => {
-            const btn = e.target.closest('.student-chip');
-            if (btn) toggleWheelStudent(btn.dataset.id);
-        };
-        document.getElementById('wheel-float-spin').onclick = spinWheel;
-        (() => {
-            const floater = document.getElementById('wheel-float');
-            let drag = null;
-            floater.addEventListener('pointerdown', (e) => {
-                if (e.target.closest('button, select, #wheel-float-panel')) return;
-                const rect = floater.getBoundingClientRect();
-                drag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
-                floater.classList.add('dragging');
-                floater.setPointerCapture(e.pointerId);
-            });
-            floater.addEventListener('pointermove', (e) => {
-                if (!drag) return;
-                floater.style.left = (e.clientX - drag.dx) + 'px';
-                floater.style.top = (e.clientY - drag.dy) + 'px';
-                floater.style.bottom = 'auto';
-            });
-            const endDrag = () => { drag = null; floater.classList.remove('dragging'); };
-            floater.addEventListener('pointerup', endDrag);
-            floater.addEventListener('pointercancel', endDrag);
-        })();
+        document.getElementById('prize-dock-btn').onclick = collapseWheel;
         document.getElementById('prize-lesson-select').onchange = () => {
             if (wheelSpinning) return;
             loadLessonOntoWheel(document.getElementById('prize-lesson-select').value);
             clearWinner();
+            syncWheelMiniLesson();
             redrawWheel();
         };
         const toggleWheelStudent = (id) => {
@@ -2106,8 +2137,7 @@
         };
         document.getElementById('spin-wheel-btn').onclick = spinWheel;
         window.addEventListener('resize', () => {
-            const open = document.getElementById('prize-modal')?.classList.contains('show')
-                || !document.getElementById('wheel-float').classList.contains('hidden');
+            const open = document.getElementById('prize-modal')?.classList.contains('show') || wheelMiniDoc();
             if (!open) return;
             if (!wheelSpinning) redrawWheel();
             if (document.getElementById('prize-modal')?.classList.contains('show')) fitPrizeChips();
