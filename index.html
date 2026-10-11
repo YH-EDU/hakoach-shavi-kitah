@@ -269,6 +269,50 @@
         #fortune-prize-btn { background: #f9a825; color: #3e2723; }
         #prize-fullscreen-btn { left: 136px; }
         #prize-dock-btn { left: 52px; border-color: #1976D2; color: #0d47a1; }
+        #wheel-orb {
+            position: fixed; z-index: 930; left: 18px; bottom: 18px; width: 300px;
+            touch-action: none;
+        }
+        #wheel-orb.dragging { cursor: grabbing; }
+        .wheel-orb-disc { position: relative; width: 300px; height: 300px; border-radius: 50%; overflow: hidden; cursor: grab; filter: drop-shadow(0 10px 18px rgba(0,0,0,.28)); }
+        #wheel-orb-canvas { width: 300px; height: 300px; display: block; }
+        .wheel-orb-pointer {
+            position: absolute; top: -4px; left: 50%; transform: translateX(-50%); z-index: 2;
+            border-left-width: 12px; border-right-width: 12px; border-top-width: 20px;
+        }
+        #wheel-orb-spin {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 3;
+            border: none; border-radius: 999px; padding: 8px 16px; cursor: pointer;
+            font-family: var(--font-family); font-weight: 800;
+            background: linear-gradient(135deg, #f9a825, #f57f17); color: #3e2723;
+            box-shadow: 0 2px 6px rgba(0,0,0,.2);
+        }
+        #wheel-orb-add, #wheel-orb-close {
+            position: absolute; z-index: 4; border: none; cursor: pointer;
+            font-family: var(--font-family); font-weight: 800;
+        }
+        #wheel-orb-add {
+            top: 8px; right: 8px; background: #fffdf8; color: #5d4037;
+            border: 2px solid #f9a825; border-radius: 999px; padding: 3px 10px; font-size: 13px;
+        }
+        #wheel-orb-close {
+            top: 8px; left: 8px; width: 28px; height: 28px; border-radius: 50%;
+            background: #1976D2; color: #fff; font-size: 18px; line-height: 1;
+        }
+        #wheel-orb-panel {
+            position: absolute; left: calc(100% + 10px); top: 36px; width: 168px; max-height: 268px;
+            overflow: auto; z-index: 4; background: rgba(255,253,248,.97);
+            border: 2px solid rgba(249,168,37,.9); border-radius: 14px; padding: 6px;
+            box-shadow: 0 10px 24px rgba(0,0,0,.16); display: flex; flex-direction: column; gap: 4px;
+        }
+        #wheel-orb-students .student-chip { font-size: 13px; padding: 4px 8px; min-height: 28px; width: 100%; text-align: right; }
+        #wheel-orb-students .student-chip.selected { background: #f9a825; color: #3e2723; border-color: #f57f17; }
+        #wheel-orb-winner {
+            position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 3;
+            background: rgba(255,253,248,.96); color: #1b5e20; font-weight: 800;
+            border-radius: 999px; padding: 2px 10px; white-space: nowrap;
+        }
+        #wheel-orb-winner:empty { display: none; }
         #confetti-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1300; }
         #install-app-btn {
             display: flex; margin: 18px auto 0; background: linear-gradient(135deg, #1976D2, #0D47A1); color: white;
@@ -533,6 +577,20 @@
         </div>
     </div>
 
+    <div id="wheel-orb" class="hidden">
+        <button type="button" id="wheel-orb-close" title="סגור">×</button>
+        <button type="button" id="wheel-orb-add">תלמידים</button>
+        <div id="wheel-orb-panel" class="hidden">
+            <div id="wheel-orb-students"></div>
+        </div>
+        <div class="wheel-pointer wheel-orb-pointer"></div>
+        <div class="wheel-orb-disc">
+            <canvas id="wheel-orb-canvas" data-wheel width="600" height="600"></canvas>
+            <button type="button" id="wheel-orb-spin">סובב</button>
+            <div id="wheel-orb-winner"></div>
+        </div>
+    </div>
+
     <div id="generic-modal-container"></div>
 
     <script>
@@ -604,7 +662,6 @@
         let appData = {};
         let currentUser = null;
         let miniWindow = null;
-        let wheelWindow = null;
         let mobileDayIndex = -1;
         let wheelIds = [];
         let wheelNames = [];
@@ -1214,15 +1271,10 @@
             ctx.stroke();
         };
 
-        const wheelMiniDoc = () => (wheelWindow && !wheelWindow.closed) ? wheelWindow.document : null;
-
         const drawWheel = (names, rotation = 0, highlight = -1) => {
             wheelRotation = rotation;
             wheelHighlight = highlight;
-            const canvases = [...document.querySelectorAll('[data-wheel]')];
-            const mini = wheelMiniDoc()?.getElementById('wm-canvas');
-            if (mini) canvases.push(mini);
-            canvases.forEach(canvas => {
+            document.querySelectorAll('[data-wheel]').forEach(canvas => {
                 if (!canvas.isConnected || !canvas.offsetParent) return;
                 paintWheel(canvas, names, rotation, highlight);
             });
@@ -1244,16 +1296,11 @@
                 `<button type="button" class="student-chip ${onWheel.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
             ).join('') || '<p>אין תלמידים עדיין. הוסיפו תלמידים בניהול הכיתה.</p>';
             updatePrizeCount();
-            const miniDoc = wheelMiniDoc();
-            if (miniDoc) {
-                const count = miniDoc.getElementById('wm-count');
-                if (count) count.textContent = wheelNames.length ? String(wheelNames.length) : '';
-                const floatList = miniDoc.getElementById('wm-students');
-                if (floatList) {
-                    floatList.innerHTML = students.map(s =>
-                        `<button type="button" class="chip ${onWheel.has(s.id) ? 'on' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
-                    ).join('');
-                }
+            const floatList = document.getElementById('wheel-orb-students');
+            if (floatList) {
+                floatList.innerHTML = students.map(s =>
+                    `<button type="button" class="student-chip ${onWheel.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
+                ).join('');
             }
             requestAnimationFrame(fitPrizeChips);
         };
@@ -1314,7 +1361,7 @@
             const el = document.getElementById('wheel-winner');
             el.innerHTML = '';
             el.classList.remove('pop');
-            const mini = wheelMiniDoc()?.getElementById('wm-winner');
+            const mini = document.getElementById('wheel-orb-winner');
             if (mini) mini.textContent = '';
         };
 
@@ -1324,156 +1371,31 @@
             el.classList.remove('pop');
             void el.offsetWidth;
             el.classList.add('pop');
-            const mini = wheelMiniDoc()?.getElementById('wm-winner');
+            const mini = document.getElementById('wheel-orb-winner');
             if (mini) mini.textContent = name.split(' ')[0] + " · צ'ופר";
         };
 
         const setSpinDisabled = (on) => {
             document.getElementById('spin-wheel-btn').disabled = on;
-            const mini = wheelMiniDoc()?.getElementById('wm-spin');
+            const mini = document.getElementById('wheel-orb-spin');
             if (mini) mini.disabled = on;
         };
 
-        const WHEEL_MINI_CSS = `
-            html, body { margin: 0; background: #fffdf8; color: #3e2723; font-family: Assistant, Arial, sans-serif; overflow: hidden; }
-            #wheel-mini { display: flex; flex-direction: column; gap: 4px; padding: 6px; }
-            .bar { display: flex; gap: 4px; }
-            button, select { font-family: inherit; }
-            #wm-list, #wm-expand, #wm-close, #wm-spin, .chip { border: none; border-radius: 8px; font-weight: 800; cursor: pointer; }
-            #wm-list { flex: 1; background: #fff; border: 2px solid #f9a825; color: #5d4037; padding: 4px 6px; text-align: right; font-size: 13px; }
-            #wm-expand, #wm-close { background: #1976D2; color: #fff; padding: 4px 7px; font-size: 13px; }
-            #wm-panel { display: flex; flex-direction: column; gap: 4px; max-height: 148px; overflow: auto; }
-            #wm-panel[hidden] { display: none !important; }
-            #wm-lesson { font-weight: 700; padding: 4px; border-radius: 8px; border: 1px solid #c4bbaa; }
-            .chip { display: block; width: 100%; text-align: right; background: #e3f2fd; color: #0d47a1; border: 2px solid #90caf9; padding: 3px 6px; font-size: 13px; }
-            .chip.on { background: #f9a825; color: #3e2723; border-color: #f57f17; }
-            .disc { display: flex; flex-direction: column; align-items: center; }
-            .ptr { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 14px solid #d32f2f; margin-bottom: -2px; }
-            #wm-canvas { width: 148px; height: 148px; }
-            #wm-spin { margin-top: -14px; background: linear-gradient(135deg, #f9a825, #f57f17); color: #3e2723; padding: 3px 12px; font-size: 13px; }
-            #wm-winner { text-align: center; font-weight: 800; color: #1b5e20; font-size: 13px; }
-            #wm-winner:empty { display: none; }
-            button:disabled { background: #bdbdbd !important; cursor: default; }
-        `;
-
-        const prepareWheelDoc = (win) => {
-            const doc = win.document;
-            doc.open();
-            doc.write('<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>גלגל המזל</title></head><body><div id="wheel-mini"><div class="bar"><button type="button" id="wm-list">תלמידים <b id="wm-count"></b></button><button type="button" id="wm-expand">הגדל</button><button type="button" id="wm-close" title="סגור">×</button></div><div id="wm-panel" hidden><select id="wm-lesson"></select><div id="wm-students"></div></div><div class="disc"><div class="ptr"></div><canvas id="wm-canvas" width="320" height="320"></canvas><button type="button" id="wm-spin">סובב</button></div><div id="wm-winner"></div></div></body></html>');
-            doc.close();
-            const font = doc.createElement('link');
-            font.rel = 'stylesheet';
-            font.href = 'https://fonts.googleapis.com/css2?family=Assistant:wght@700;800&display=swap';
-            doc.head.appendChild(font);
-            const style = doc.createElement('style');
-            style.textContent = WHEEL_MINI_CSS;
-            doc.head.appendChild(style);
-            font.onload = () => redrawWheel();
+        const hideWheelOrb = () => {
+            document.getElementById('wheel-orb')?.classList.add('hidden');
+            document.getElementById('wheel-orb-panel')?.classList.add('hidden');
         };
 
-        const fitWheelWindow = () => {
-            if (!wheelWindow || wheelWindow.closed) return;
-            const root = wheelWindow.document.getElementById('wheel-mini');
-            if (!root) return;
-            const contentH = Math.ceil(root.getBoundingClientRect().height) + 10;
-            const contentW = 168;
-            const chromeH = Math.max(0, wheelWindow.outerHeight - wheelWindow.innerHeight);
-            const chromeW = Math.max(0, wheelWindow.outerWidth - wheelWindow.innerWidth);
-            try { wheelWindow.resizeTo(contentW + chromeW, contentH + chromeH + 2); } catch (e) {}
-        };
-
-        const syncWheelMiniLesson = () => {
-            const doc = wheelMiniDoc();
-            if (!doc) return;
-            const select = document.getElementById('prize-lesson-select');
-            const mini = doc.getElementById('wm-lesson');
-            if (!mini || !select) return;
-            mini.innerHTML = select.innerHTML;
-            mini.value = select.value;
-        };
-
-        const bindWheelMini = (doc) => {
-            doc.getElementById('wm-expand').onclick = () => expandWheel();
-            doc.getElementById('wm-close').onclick = () => closeWheelWindow();
-            doc.getElementById('wm-list').onclick = () => {
-                const panel = doc.getElementById('wm-panel');
-                panel.hidden = !panel.hidden;
-                syncWheelMiniLesson();
-                requestAnimationFrame(fitWheelWindow);
-            };
-            doc.getElementById('wm-lesson').onchange = () => {
-                if (wheelSpinning) return;
-                const value = doc.getElementById('wm-lesson').value;
-                document.getElementById('prize-lesson-select').value = value;
-                loadLessonOntoWheel(value);
-                clearWinner();
-                redrawWheel();
-            };
-            doc.getElementById('wm-students').onclick = (e) => {
-                const btn = e.target.closest('.chip');
-                if (btn) toggleWheelStudent(btn.dataset.id);
-            };
-            doc.getElementById('wm-spin').onclick = spinWheel;
-        };
-
-        const closeWheelWindow = () => {
-            const win = wheelWindow;
-            wheelWindow = null;
-            if (win && !win.closed) win.close();
-        };
-
-        const collapseWheel = async () => {
-            primeFanfare();
+        const collapseWheel = () => {
             const select = document.getElementById('prize-lesson-select');
             if (!select.options.length) fillLessonSelect(select);
             if (!select.value && select.options.length) select.selectedIndex = 0;
             if (!wheelIds.length && select.value) loadLessonOntoWheel(select.value);
             closeModal('prize-modal');
-            if (wheelWindow && !wheelWindow.closed) {
-                syncWheelMiniLesson();
-                renderPrizeStudents();
-                requestAnimationFrame(() => { redrawWheel(); fitWheelWindow(); });
-                return;
-            }
-            const width = 176;
-            const height = 230;
-            const attach = (win) => {
-                prepareWheelDoc(win);
-                wheelWindow = win;
-                bindWheelMini(win.document);
-                syncWheelMiniLesson();
-                win.addEventListener('pagehide', () => {
-                    if (wheelWindow === win) wheelWindow = null;
-                });
-                renderPrizeStudents();
-                requestAnimationFrame(() => { redrawWheel(); fitWheelWindow(); });
-            };
-            const lessonPipOpen = !!(window.documentPictureInPicture?.window && miniWindow && documentPictureInPicture.window === miniWindow);
-            try {
-                if (window.documentPictureInPicture && !lessonPipOpen) {
-                    attach(await documentPictureInPicture.requestWindow({ width, height }));
-                    return;
-                }
-            } catch (e) {
-                console.error(e);
-            }
-            const pop = window.open('', 'hakoach-wheel', `popup=yes,width=${width},height=${height},left=${window.screen.availLeft + 8},top=${window.screen.availTop + 64}`);
-            if (!pop) {
-                showToast('הדפדפן חסם את החלון. אשרו חלונות קופצים, או פתחו ב-Chrome / Edge.');
-                expandWheel();
-                return;
-            }
-            attach(pop);
-            try { pop.focus(); } catch (e) {}
-        };
-
-        const expandWheel = () => {
-            closeWheelWindow();
-            const select = document.getElementById('prize-lesson-select');
-            if (!select.options.length) fillLessonSelect(select);
+            document.getElementById('wheel-orb-panel').classList.add('hidden');
+            document.getElementById('wheel-orb').classList.remove('hidden');
             renderPrizeStudents();
-            openModal('prize-modal');
-            requestAnimationFrame(() => requestAnimationFrame(() => { redrawWheel(); fitPrizeChips(); }));
+            requestAnimationFrame(redrawWheel);
         };
 
         const persistPrize = (cellId, ids) => {
@@ -1509,7 +1431,7 @@
             if (!select.value && select.options.length) select.selectedIndex = 0;
             loadLessonOntoWheel(select.value);
             clearWinner();
-            closeWheelWindow();
+            hideWheelOrb();
             openModal('prize-modal');
             requestAnimationFrame(() => requestAnimationFrame(() => { redrawWheel(); fitPrizeChips(); }));
         };
@@ -1874,7 +1796,7 @@
             miniWindow = null;
             setFloatMode(false);
             document.getElementById('fortune-float')?.classList.add('hidden');
-            closeWheelWindow();
+            hideWheelOrb();
             showView('login-page');
             document.getElementById('setup-hint').classList.toggle('hidden', !!appData.setupComplete);
         };
@@ -2109,11 +2031,40 @@
 
         document.getElementById('prize-btn').onclick = () => openPrizeModal();
         document.getElementById('prize-dock-btn').onclick = collapseWheel;
+        document.getElementById('wheel-orb-close').onclick = hideWheelOrb;
+        document.getElementById('wheel-orb-add').onclick = () => {
+            document.getElementById('wheel-orb-panel').classList.toggle('hidden');
+        };
+        document.getElementById('wheel-orb-students').onclick = (e) => {
+            const btn = e.target.closest('.student-chip');
+            if (btn) toggleWheelStudent(btn.dataset.id);
+        };
+        document.getElementById('wheel-orb-spin').onclick = spinWheel;
+        (() => {
+            const orb = document.getElementById('wheel-orb');
+            const handle = orb.querySelector('.wheel-orb-disc');
+            let drag = null;
+            handle.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('button')) return;
+                const rect = orb.getBoundingClientRect();
+                drag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+                orb.classList.add('dragging');
+                handle.setPointerCapture(e.pointerId);
+            });
+            handle.addEventListener('pointermove', (e) => {
+                if (!drag) return;
+                orb.style.left = (e.clientX - drag.dx) + 'px';
+                orb.style.top = (e.clientY - drag.dy) + 'px';
+                orb.style.bottom = 'auto';
+            });
+            const endDrag = () => { drag = null; orb.classList.remove('dragging'); };
+            handle.addEventListener('pointerup', endDrag);
+            handle.addEventListener('pointercancel', endDrag);
+        })();
         document.getElementById('prize-lesson-select').onchange = () => {
             if (wheelSpinning) return;
             loadLessonOntoWheel(document.getElementById('prize-lesson-select').value);
             clearWinner();
-            syncWheelMiniLesson();
             redrawWheel();
         };
         const toggleWheelStudent = (id) => {
@@ -2137,7 +2088,8 @@
         };
         document.getElementById('spin-wheel-btn').onclick = spinWheel;
         window.addEventListener('resize', () => {
-            const open = document.getElementById('prize-modal')?.classList.contains('show') || wheelMiniDoc();
+            const open = document.getElementById('prize-modal')?.classList.contains('show')
+                || !document.getElementById('wheel-orb').classList.contains('hidden');
             if (!open) return;
             if (!wheelSpinning) redrawWheel();
             if (document.getElementById('prize-modal')?.classList.contains('show')) fitPrizeChips();
