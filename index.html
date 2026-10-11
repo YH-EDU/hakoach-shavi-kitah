@@ -299,11 +299,6 @@
             top: 8px; left: 8px; width: 28px; height: 28px; border-radius: 50%;
             background: #1976D2; color: #fff; font-size: 18px; line-height: 1;
         }
-        #wheel-orb-pop {
-            position: absolute; z-index: 4; top: 44px; left: 6px; border: 2px solid #1976D2;
-            background: #fffdf8; color: #0d47a1; border-radius: 999px; padding: 2px 8px;
-            font-family: var(--font-family); font-weight: 800; font-size: 12px; cursor: pointer;
-        }
         #wheel-orb-panel {
             position: absolute; z-index: 5; left: 34px; right: 34px; bottom: 16px; height: 148px;
             overflow: auto; background: rgba(255,253,248,.97);
@@ -585,7 +580,6 @@
     <div id="wheel-orb-slot">
     <div id="wheel-orb" class="hidden">
         <button type="button" id="wheel-orb-close" title="סגור">×</button>
-        <button type="button" id="wheel-orb-pop" title="אותו גלגל, בחלון מעל דפים אחרים">חלונית</button>
         <button type="button" id="wheel-orb-add">תלמידים</button>
         <div id="wheel-orb-panel" class="hidden">
             <div id="wheel-orb-students"></div>
@@ -670,7 +664,6 @@
         let appData = {};
         let currentUser = null;
         let miniWindow = null;
-        let wheelWindow = null;
         let mobileDayIndex = -1;
         let wheelIds = [];
         let wheelNames = [];
@@ -1280,14 +1273,10 @@
             ctx.stroke();
         };
 
-        const orbDocument = () => (wheelWindow && !wheelWindow.closed) ? wheelWindow.document : document;
-
         const drawWheel = (names, rotation = 0, highlight = -1) => {
             wheelRotation = rotation;
             wheelHighlight = highlight;
-            const canvases = [...document.querySelectorAll('[data-wheel]')];
-            if (wheelWindow && !wheelWindow.closed) canvases.push(...wheelWindow.document.querySelectorAll('[data-wheel]'));
-            canvases.forEach(canvas => {
+            document.querySelectorAll('[data-wheel]').forEach(canvas => {
                 if (!canvas.isConnected || !canvas.offsetParent) return;
                 paintWheel(canvas, names, rotation, highlight);
             });
@@ -1309,7 +1298,7 @@
                 `<button type="button" class="student-chip ${onWheel.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
             ).join('') || '<p>אין תלמידים עדיין. הוסיפו תלמידים בניהול הכיתה.</p>';
             updatePrizeCount();
-            const floatList = orbDocument().getElementById('wheel-orb-students');
+            const floatList = document.getElementById('wheel-orb-students');
             if (floatList) {
                 floatList.innerHTML = students.map(s =>
                     `<button type="button" class="student-chip ${onWheel.has(s.id) ? 'selected' : ''}" data-id="${s.id}">${escapeHtml(s.name)}</button>`
@@ -1374,7 +1363,7 @@
             const el = document.getElementById('wheel-winner');
             el.innerHTML = '';
             el.classList.remove('pop');
-            const mini = orbDocument().getElementById('wheel-orb-winner');
+            const mini = document.getElementById('wheel-orb-winner');
             if (mini) mini.textContent = '';
         };
 
@@ -1384,132 +1373,19 @@
             el.classList.remove('pop');
             void el.offsetWidth;
             el.classList.add('pop');
-            const mini = orbDocument().getElementById('wheel-orb-winner');
+            const mini = document.getElementById('wheel-orb-winner');
             if (mini) mini.textContent = name.split(' ')[0] + " · צ'ופר";
         };
 
         const setSpinDisabled = (on) => {
             document.getElementById('spin-wheel-btn').disabled = on;
-            const mini = orbDocument().getElementById('wheel-orb-spin');
+            const mini = document.getElementById('wheel-orb-spin');
             if (mini) mini.disabled = on;
         };
 
-        const ORB_WINDOW_CSS = `
-            html, body { margin: 0; width: 300px; height: 300px; background: transparent; overflow: hidden; }
-            .hidden { display: none !important; }
-            button { font-family: Assistant, Arial, sans-serif; }
-            button:disabled { background-color: #bdbdbd !important; cursor: not-allowed !important; opacity: 0.7; }
-            .wheel-pointer { width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 32px solid #d32f2f; z-index: 2; filter: drop-shadow(0 2px 1px rgba(0,0,0,.25)); }
-            .student-chip { background: #e3f2fd; color: #0d47a1; border: 2px solid #90caf9; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: Assistant, Arial, sans-serif; }
-            #wheel-orb { position: relative; left: auto; top: auto; bottom: auto; width: 300px; height: 300px; margin: 0; touch-action: none; }
-            .wheel-orb-disc { position: relative; width: 300px; height: 300px; border-radius: 50%; overflow: hidden; filter: drop-shadow(0 10px 18px rgba(0,0,0,.28)); }
-            #wheel-orb-canvas { width: 300px; height: 300px; display: block; }
-            .wheel-orb-pointer { position: absolute; top: 2px; left: 50%; transform: translateX(-50%); z-index: 2; border-left-width: 12px; border-right-width: 12px; border-top-width: 20px; }
-            #wheel-orb-spin { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 6; border: none; border-radius: 999px; padding: 8px 16px; cursor: pointer; font-weight: 800; background: linear-gradient(135deg, #f9a825, #f57f17); color: #3e2723; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
-            #wheel-orb-add, #wheel-orb-close, #wheel-orb-pop { position: absolute; z-index: 6; border: none; cursor: pointer; font-weight: 800; }
-            #wheel-orb-add { top: 8px; right: 8px; background: #fffdf8; color: #5d4037; border: 2px solid #f9a825; border-radius: 999px; padding: 3px 10px; font-size: 13px; }
-            #wheel-orb-close { top: 8px; left: 8px; width: 28px; height: 28px; border-radius: 50%; background: #1976D2; color: #fff; font-size: 18px; line-height: 1; }
-            #wheel-orb-pop { top: 44px; left: 6px; border: 2px solid #1976D2; background: #fffdf8; color: #0d47a1; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
-            #wheel-orb-panel { position: absolute; z-index: 5; left: 34px; right: 34px; bottom: 16px; height: 148px; overflow: auto; background: rgba(255,253,248,.97); border: 2px solid rgba(249,168,37,.9); border-radius: 16px; padding: 6px; box-shadow: 0 8px 18px rgba(0,0,0,.18); display: flex; flex-direction: column; gap: 4px; }
-            #wheel-orb-students .student-chip { font-size: 15px; padding: 6px 8px; min-height: 34px; width: 100%; text-align: right; }
-            #wheel-orb-students .student-chip.selected { background: #f9a825; color: #3e2723; border-color: #f57f17; }
-            #wheel-orb-winner { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 3; background: rgba(255,253,248,.96); color: #1b5e20; font-weight: 800; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
-            #wheel-orb-winner:empty { display: none; }
-        `;
-
-        const fitWheelWindow = () => {
-            if (!wheelWindow || wheelWindow.closed) return;
-            const contentW = 300;
-            const contentH = 300;
-            const chromeH = Math.max(0, wheelWindow.outerHeight - wheelWindow.innerHeight);
-            const chromeW = Math.max(0, wheelWindow.outerWidth - wheelWindow.innerWidth);
-            try { wheelWindow.resizeTo(contentW + chromeW, contentH + chromeH); } catch (e) {}
-        };
-
-        const restoreWheelOrb = () => {
-            const foreign = wheelWindow && !wheelWindow.closed ? wheelWindow.document.getElementById('wheel-orb') : null;
-            const orb = foreign || document.getElementById('wheel-orb');
-            const win = wheelWindow;
-            wheelWindow = null;
-            if (orb && orb.ownerDocument !== document) document.getElementById('wheel-orb-slot').appendChild(orb);
-            if (orb) {
-                orb.classList.remove('is-out');
-                orb.style.left = '';
-                orb.style.top = '';
-                orb.style.bottom = '';
-                const pop = orb.querySelector('#wheel-orb-pop');
-                if (pop) pop.textContent = 'חלונית';
-            }
-            if (win && !win.closed) win.close();
-        };
-
         const hideWheelOrb = () => {
-            restoreWheelOrb();
             document.getElementById('wheel-orb')?.classList.add('hidden');
             document.getElementById('wheel-orb-panel')?.classList.add('hidden');
-        };
-
-        const detachWheel = async () => {
-            if (wheelWindow && !wheelWindow.closed) {
-                restoreWheelOrb();
-                requestAnimationFrame(redrawWheel);
-                return;
-            }
-            primeFanfare();
-            const orb = document.getElementById('wheel-orb');
-            if (!orb || orb.classList.contains('hidden')) return;
-            const width = 300;
-            const height = 300;
-            const attach = (win) => {
-                const doc = win.document;
-                doc.open();
-                doc.write('<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>גלגל המזל</title></head><body></body></html>');
-                doc.close();
-                const font = doc.createElement('link');
-                font.rel = 'stylesheet';
-                font.href = 'https://fonts.googleapis.com/css2?family=Assistant:wght@700;800&display=swap';
-                doc.head.appendChild(font);
-                const style = doc.createElement('style');
-                style.textContent = ORB_WINDOW_CSS;
-                doc.head.appendChild(style);
-                font.onload = () => redrawWheel();
-                wheelWindow = win;
-                doc.body.appendChild(orb);
-                orb.classList.add('is-out');
-                orb.style.left = '';
-                orb.style.top = '';
-                orb.style.bottom = '';
-                const pop = orb.querySelector('#wheel-orb-pop');
-                if (pop) pop.textContent = 'חזרה';
-                win.addEventListener('pagehide', () => {
-                    if (wheelWindow !== win) return;
-                    wheelWindow = null;
-                    if (orb.ownerDocument !== document) document.getElementById('wheel-orb-slot').appendChild(orb);
-                    orb.classList.remove('is-out');
-                    orb.style.left = '';
-                    orb.style.top = '';
-                    orb.style.bottom = '';
-                    if (pop) pop.textContent = 'חלונית';
-                    requestAnimationFrame(redrawWheel);
-                });
-                requestAnimationFrame(() => { redrawWheel(); fitWheelWindow(); });
-            };
-            const lessonPipOpen = !!(window.documentPictureInPicture?.window && miniWindow && documentPictureInPicture.window === miniWindow);
-            try {
-                if (window.documentPictureInPicture && !lessonPipOpen) {
-                    attach(await documentPictureInPicture.requestWindow({ width, height }));
-                    return;
-                }
-            } catch (e) {
-                console.error(e);
-            }
-            const pop = window.open('', 'hakoach-wheel', `popup=yes,width=${width},height=${height},left=${window.screen.availLeft + 12},top=${window.screen.availTop + 48}`);
-            if (!pop) {
-                showToast('הדפדפן חסם את החלון. אשרו חלונות קופצים, או פתחו ב-Chrome / Edge.');
-                return;
-            }
-            attach(pop);
-            try { pop.focus(); } catch (e) {}
         };
 
         const collapseWheel = () => {
@@ -2158,10 +2034,8 @@
         document.getElementById('prize-btn').onclick = () => openPrizeModal();
         document.getElementById('prize-dock-btn').onclick = collapseWheel;
         document.getElementById('wheel-orb-close').onclick = hideWheelOrb;
-        document.getElementById('wheel-orb-pop').onclick = detachWheel;
         document.getElementById('wheel-orb-add').onclick = () => {
-            orbDocument().getElementById('wheel-orb-panel').classList.toggle('hidden');
-            fitWheelWindow();
+            document.getElementById('wheel-orb-panel').classList.toggle('hidden');
         };
         document.getElementById('wheel-orb-students').onclick = (e) => {
             const btn = e.target.closest('.student-chip');
@@ -2173,7 +2047,7 @@
             const handle = orb.querySelector('.wheel-orb-disc');
             let drag = null;
             handle.addEventListener('pointerdown', (e) => {
-                if (e.target.closest('button') || orb.classList.contains('is-out')) return;
+                if (e.target.closest('button')) return;
                 const rect = orb.getBoundingClientRect();
                 drag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
                 orb.classList.add('dragging');
@@ -2218,8 +2092,7 @@
         window.addEventListener('resize', () => {
             const orb = document.getElementById('wheel-orb');
             const open = document.getElementById('prize-modal')?.classList.contains('show')
-                || (orb && !orb.classList.contains('hidden'))
-                || (wheelWindow && !wheelWindow.closed);
+                || (orb && !orb.classList.contains('hidden'));
             if (!open) return;
             if (!wheelSpinning) redrawWheel();
             if (document.getElementById('prize-modal')?.classList.contains('show')) fitPrizeChips();
