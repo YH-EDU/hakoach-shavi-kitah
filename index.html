@@ -1798,8 +1798,8 @@
         const enterApp = (teacher) => {
             currentUser = teacher;
             persistSession();
-            const sys = getSystemStatus();
-            if (!appData.currentWeek) appData.currentWeek = sys.week;
+            appData.currentWeek = getSystemStatus().week;
+            mobileDayIndex = -1;
             showView('main-app');
             renderAll();
             restoreFortune();
