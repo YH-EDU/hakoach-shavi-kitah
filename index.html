@@ -115,8 +115,18 @@
         .kodesh-cell { background: rgba(149, 117, 205, 0.18); }
         .chol-cell { background: rgba(100, 181, 246, 0.22); }
         .tefila-cell { background: rgba(128, 222, 234, 0.35); }
-        .highlight-today { background-color: var(--current-day-bg) !important; border-left: var(--current-day-border); border-right: var(--current-day-border); }
-        th.highlight-today { border-top: var(--current-day-border); }
+        .highlight-today {
+            background-color: #d6e8fb !important;
+            box-shadow: inset 4px 0 0 #1565C0, inset -4px 0 0 #1565C0;
+        }
+        th.highlight-today {
+            background-color: #1565C0 !important; color: #fff;
+            box-shadow: inset 0 4px 0 #0d47a1, inset 4px 0 0 #1565C0, inset -4px 0 0 #1565C0;
+        }
+        th.highlight-today span { color: #fff; opacity: 1; }
+        #points-table tbody tr:last-child td.highlight-today {
+            box-shadow: inset 4px 0 0 #1565C0, inset -4px 0 0 #1565C0, inset 0 -4px 0 #1565C0;
+        }
         .lesson-name-input { width: 95%; border: none; border-bottom: 1px dashed transparent; padding: 4px; font-size: 0.9em; text-align: center; background: transparent; font-weight: 800; font-family: var(--font-family); color: inherit; }
         .lesson-name-input:hover, .lesson-name-input:focus { outline: none; border-bottom-color: currentColor; }
         .lesson-name-input[readonly] { font-weight: 800; border: none; cursor: default; }
@@ -935,6 +945,11 @@
             return Math.min(Math.max(dayIndex, 0), 5);
         };
         const todayColIndex = () => Math.min(Math.max(getSystemStatus().dayIndex, 0), 5);
+        const columnIsToday = (week, col) => {
+            const d = getColDate(week, col);
+            const now = new Date();
+            return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+        };
         const lessonOptionsForDay = (week, dayIdx) => scoredPeriodsForDay(dayIdx).map(p => {
             const cellId = cellIdFor(p, dayIdx);
             return { cellId, week, label: `${p.time} — ${lessonNameFor(p, dayIdx)}` };
@@ -956,15 +971,15 @@
             </select>`;
 
         const renderTable = () => {
-            const sys = getSystemStatus();
             const week = appData.currentWeek;
             const todayIdx = todayColIndex();
             let headers = '';
             for (let i = 0; i < days.length; i++) {
                 const col = i - 1;
                 const isTodayCol = i > 0 && col === todayIdx;
-                const isToday = isTodayCol && (week === sys.week);
+                const isToday = i > 0 && columnIsToday(week, col);
                 let dayLabel = days[i];
+                if (isToday) dayLabel += ' · היום';
                 if (i > 0) {
                     const he = toHebrewDate(getColDate(week, col));
                     if (he) dayLabel += `<br><span style="font-size:0.72em;font-weight:500;opacity:0.85;">${he.day} ${he.month}</span>`;
@@ -981,7 +996,7 @@
                 for (let col = 0; col < 6; col++) {
                     if (skip[col] > 0) { skip[col]--; continue; }
                     const isTodayCol = col === todayIdx;
-                    const isToday = isTodayCol && (week === sys.week);
+                    const isToday = columnIsToday(week, col);
                     const hl = `${isTodayCol ? 'is-today-col' : ''} ${isToday ? 'highlight-today' : ''}`;
                     const lessonName = lessonNameFor(period, col);
                     const span = isPlainBlock(period, col) ? blockSpanFrom(pi, col) : 1;
@@ -1013,15 +1028,14 @@
         };
 
         const renderMobileDayView = () => {
-            const sys = getSystemStatus();
             const dayIdx = getMobileDayIndex();
             const week = appData.currentWeek;
+            const isToday = columnIsToday(week, dayIdx);
             const titleEl = document.getElementById('mobile-day-title');
-            if (titleEl) titleEl.textContent = dayNames[dayIdx];
+            if (titleEl) titleEl.textContent = dayNames[dayIdx] + (isToday ? ' · היום' : '');
             document.getElementById('mobile-prev-day').disabled = dayIdx <= 0;
             document.getElementById('mobile-next-day').disabled = dayIdx >= 5;
             const weekData = appData.weeks[week] || {};
-            const isToday = (week === sys.week) && (dayIdx === Math.min(Math.max(sys.dayIndex, 0), 5));
             let html = '';
             for (let pi = 0; pi < PERIODS.length; pi++) {
                 const period = PERIODS[pi];
